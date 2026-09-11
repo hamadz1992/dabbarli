@@ -5,7 +5,9 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
 (function(){
   const style=document.createElement('style');
   style.textContent=`
-    .detail-link{display:flex!important;align-items:center;justify-content:center;box-sizing:border-box;width:100%;min-height:46px;margin:10px 0 0;padding:12px 14px;border-radius:10px;background:#0b8f58;color:#fff!important;font-weight:800;text-decoration:none!important}
+    .detail .actions{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:12px}
+    .detail .actions a{display:flex!important;align-items:center;justify-content:center;box-sizing:border-box;min-width:0;min-height:44px;padding:10px 6px;border-radius:9px;font-size:13px;font-weight:800;text-decoration:none!important;white-space:nowrap}
+    .detail-link{margin:0!important;background:#0b8f58;color:#fff!important}
     .detail-link:hover{filter:brightness(.95)}
     .rating-box{margin-top:20px;padding:16px;border:1px solid #e7ede9;border-radius:18px;background:#f3faf6;text-align:right}
     .rating-box-title{font-weight:800;font-size:16px;margin-bottom:8px}
@@ -15,17 +17,18 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     .rating-submit{width:100%;margin-top:5px}
     .link-field{padding:12px;border:1px solid #dce7e1;border-radius:14px;background:#f7fbf9}
     .link-field label{font-weight:800}
+    @media(max-width:520px){.detail .actions a{font-size:11px;padding:9px 3px}}
   `;
   document.head.appendChild(style);
   let currentServiceId=null;
   const fingerprint=()=>{let x=localStorage.getItem('dabbarli_rating_fp');if(!x){x=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();localStorage.setItem('dabbarli_rating_fp',x)}return x};
-  function makeLink(url){const a=document.createElement('a');a.className='detail-link stored-detail-link';a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='🔗 فتح الرابط';return a}
+  function makeLink(url){const a=document.createElement('a');a.className='detail-link stored-detail-link';a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='🔗 الرابط';return a}
   function addStoredLink(detail){
     if(detail.querySelector('.stored-detail-link'))return;
     let service=null;try{service=window.__dabbarliServices?.find(x=>String(x.id)===String(currentServiceId))}catch(e){}
     const url=String(service?.link||'').trim();
-    const p=detail.querySelector('.detail > p');
-    if(url&&p)detail.insertBefore(makeLink(url),p);
+    const actions=detail.querySelector('.actions');
+    if(url&&actions)actions.appendChild(makeLink(url));
   }
   async function addRating(detail){
     if(!currentServiceId||detail.querySelector('.rating-box'))return;
