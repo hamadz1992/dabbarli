@@ -109,17 +109,17 @@ document.addEventListener('submit', async function (event) {
   const style = document.createElement('style');
   style.textContent = `
     .service-img{object-fit:cover!important;object-position:center!important;background:#eee;cursor:pointer}
-    .detail-img{object-fit:contain!important;object-position:center!important;background:#eee;cursor:zoom-in}
+    .detail-img{object-fit:cover!important;object-position:center!important;background:#eee;cursor:zoom-in}
     .image-lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:18px}
     .image-lightbox img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:8px}
     .image-lightbox .close-image{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:30px;line-height:1}
     .rating-box{margin-top:20px;padding:16px;border:1px solid #e7ede9;border-radius:18px;background:#f3faf6;text-align:right}
     .rating-box-title{font-weight:800;font-size:16px;margin-bottom:8px}
     .rating-choices{display:flex;direction:ltr;gap:5px;margin:7px 0 10px}
-    .rating-choice{font-size:31px;color:#c9cec9;cursor:pointer;padding:0 2px}
+    .rating-choice{font-size:31px;color:#c9cec9;cursor:pointer;padding:0 2px;border:0;background:transparent}
     .rating-choice.selected{color:#e2a400}
     .rating-submit{width:100%;margin-top:5px}
-    .detail-link{display:inline-block;margin-top:6px;color:#0b8a56;font-weight:700;text-decoration:underline}
+    .detail-link{display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;margin-top:10px;padding:12px 14px;border-radius:10px;background:#7440d6;color:#fff!important;font-weight:700;text-decoration:none!important}
   `;
   document.head.appendChild(style);
 })();
@@ -176,7 +176,7 @@ document.addEventListener('submit', async function (event) {
     if (!currentServiceId || detail.querySelector('.rating-box')) return;
     const box = document.createElement('div');
     box.className = 'rating-box';
-    box.innerHTML = `<div class="rating-box-title">قيّم هذه الخدمة</div><div class="rating-choices" aria-label="اختر التقييم"><button class="rating-choice" data-rating="1">★</button><button class="rating-choice" data-rating="2">★</button><button class="rating-choice" data-rating="3">★</button><button class="rating-choice" data-rating="4">★</button><button class="rating-choice" data-rating="5">★</button></div><button class="primary rating-submit" disabled>إرسال التقييم</button><div class="muted rating-status"></div>`;
+    box.innerHTML = `<div class="rating-box-title">قيّم هذه الخدمة</div><div class="rating-choices" aria-label="اختر التقييم"><button type="button" class="rating-choice" data-rating="1">★</button><button type="button" class="rating-choice" data-rating="2">★</button><button type="button" class="rating-choice" data-rating="3">★</button><button type="button" class="rating-choice" data-rating="4">★</button><button type="button" class="rating-choice" data-rating="5">★</button></div><button type="button" class="primary rating-submit" disabled>إرسال التقييم</button><div class="muted rating-status"></div>`;
     const actions = detail.querySelector('.actions');
     detail.insertBefore(box, actions || null);
     let selected = 0;
@@ -220,11 +220,23 @@ document.addEventListener('submit', async function (event) {
     }
     ensureRating(detail);
   };
+  const wrapShowDetail = () => {
+    if (typeof window.showDetail !== 'function' || window.showDetail.__dabbarliWrapped) return;
+    const original = window.showDetail;
+    const wrapped = function(id){ currentServiceId = String(id); const result = original.apply(this, arguments); setTimeout(enhance, 0); setTimeout(enhance, 120); return result; };
+    wrapped.__dabbarliWrapped = true;
+    window.showDetail = wrapped;
+  };
+  const wrapperTimer = setInterval(() => {
+    wrapShowDetail();
+    if (typeof window.showDetail === 'function' && window.showDetail.__dabbarliWrapped) clearInterval(wrapperTimer);
+  }, 50);
   document.addEventListener('click', event => {
     const button = event.target.closest('button[onclick*="showDetail"]');
     if (!button) return;
     const match = String(button.getAttribute('onclick') || '').match(/showDetail\(['"]([^'"]+)['"]\)/);
     if (match) currentServiceId = match[1];
+    setTimeout(enhance, 0);
   }, true);
   const observer = new MutationObserver(enhance);
   observer.observe(document.getElementById('content') || document.body, {childList:true,subtree:true});
