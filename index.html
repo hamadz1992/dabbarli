@@ -6,7 +6,7 @@
 <title>دبّرلي — كل ما تحتاجه</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script><script src="config.js?v=20260911-16"></script><link rel="stylesheet" href="style.css?v=20260911-10">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script><script src="config.js?v=20260911-22"></script><script src="category-details.js?v=20260911-22"></script><link rel="stylesheet" href="style.css?v=20260911-10">
 </head>
 <body>
 <header class="topbar"><button class="menu-btn" id="menuBtn">☰</button><div class="brand"><div class="logo">✓</div><div class="brand-text"><strong>دبّرلي</strong><small>كل ما تحتاجه ... دبّرلي</small></div></div></header>
@@ -37,76 +37,30 @@ function news(){content.innerHTML='<div class="page-card"><h2>الأخبار</h2
 <script>
 (function(){
   const details={
-    'خدمات منزلية':{
-      icon:'🏠',items:['كهربائي منازل','سباك','نجار','حداد','بناء','دهان','جباس','ألمنيوم','بلاط','جبس','تكييف وتبريد','أجهزة منزلية','تنظيف منازل','مكافحة حشرات','خياطة','إصلاح أحذية']
-    },
-    'العقارات':{
-      icon:'🏠',items:['منازل للكراء','منازل للبيع','شقق للكراء','شقق للبيع','محلات للكراء','محلات للبيع','مكاتب','مستودعات','أراضي','أراضي فلاحية','غرف للكراء']
-    },
-    'الصحة':{
-      icon:'🩺',items:['طبيب عام','أطباء أطفال','أطباء أسنان','طب العيون','طب الجلدية','طب القلب','نساء وتوليد','أطباء مختصون','ممرضون','قابلات','مخابر التحاليل','علاج طبيعي','صيدليات','عيادات']
-    },
-    'الزراعة والحدائق':{
-      icon:'🌿',items:['طبيب بيطري','جرارات','آلات فلاحية','كراء آلات فلاحية','حرث','حصاد','حفر آبار','أعلاف','بذور','أسمدة','معدات فلاحية','تنسيق الحدائق','صيانة الحدائق','بيع النباتات']
-    },
-    'التكنولوجيا':{
-      icon:'💻',items:['هواتف','صيانة الهواتف','حواسيب','صيانة الحواسيب','برمجة','تصميم مواقع','تصميم جرافيك','شبكات وإنترنت','كاميرات مراقبة','طباعة ونسخ','بيع الإلكترونيات','صيانة الأجهزة الإلكترونية']
-    },
-    'الدروس والتعليم':{
-      icon:'🎓',items:['دروس ابتدائي','دروس متوسط','دروس ثانوي','تحضير البكالوريا','لغات أجنبية','رياضيات','فيزياء','علوم طبيعية','دروس خصوصية','محو الأمية','تكوين مهني','إعلام آلي','تعليم السياقة']
-    },
-    'الجمال والعناية':{
-      icon:'💄',items:['حلاقة رجالية','صالون نسائي','تجميل','مكياج','تسريحات شعر','عناية بالبشرة','عناية بالأظافر','نقش الحناء','إزالة الشعر','سبا','مساج','عطور ومستحضرات']
-    },
-    'خدمات أخرى':{
-      icon:'✨',items:['خدمات المناسبات','تنظيم الأعراس','تصوير ومونتاج','ديكور المناسبات','سياحة وسفر','فنادق وإقامة','خدمات الحيوانات','رعاية الحيوانات','نقل البضائع','خدمات متنوعة','خدمات إدارية','ترجمة']
-    }
+    'خدمات منزلية':{icon:'🏠',items:['كهربائي منازل','سباك','نجار','حداد','بناء','دهان','جباس','ألمنيوم','بلاط','جبس','تكييف وتبريد','أجهزة منزلية','تنظيف منازل','مكافحة حشرات','خياطة','إصلاح أحذية']},
+    'العقارات':{icon:'🏠',items:['منازل للكراء','منازل للبيع','شقق للكراء','شقق للبيع','محلات للكراء','محلات للبيع','مكاتب','مستودعات','أراضي','أراضي فلاحية','غرف للكراء']},
+    'الصحة':{icon:'🩺',items:['طبيب عام','أطباء أطفال','أطباء أسنان','طب العيون','طب الجلدية','طب القلب','نساء وتوليد','أطباء مختصون','ممرضون','قابلات','مخابر التحاليل','علاج طبيعي','صيدليات','عيادات']},
+    'الزراعة والحدائق':{icon:'🌿',items:['طبيب بيطري','جرارات','آلات فلاحية','كراء آلات فلاحية','حرث','حصاد','حفر آبار','أعلاف','بذور','أسمدة','معدات فلاحية','تنسيق الحدائق','صيانة الحدائق','بيع النباتات']},
+    'التكنولوجيا':{icon:'💻',items:['هواتف','صيانة الهواتف','حواسيب','صيانة الحواسيب','برمجة','تصميم مواقع','تصميم جرافيك','شبكات وإنترنت','كاميرات مراقبة','طباعة ونسخ','بيع الإلكترونيات','صيانة الأجهزة الإلكترونية']},
+    'الدروس والتعليم':{icon:'🎓',items:['دروس ابتدائي','دروس متوسط','دروس ثانوي','تحضير البكالوريا','لغات أجنبية','رياضيات','فيزياء','علوم طبيعية','دروس خصوصية','محو الأمية','تكوين مهني','إعلام آلي','تعليم السياقة']},
+    'الجمال والعناية':{icon:'💄',items:['حلاقة رجالية','صالون نسائي','تجميل','مكياج','تسريحات شعر','عناية بالبشرة','عناية بالأظافر','نقش الحناء','إزالة الشعر','سبا','مساج','عطور ومستحضرات']},
+    'خدمات أخرى':{icon:'✨',items:['خدمات إدارية','استخراج وثائق','كتابة عرائض','ترجمة','محاسبة','خدمات تأمين','استشارات','خدمات قانونية','خدمات عقود','خدمات مالية','خدمات مهنية','خدمات عامة']}
   };
   const norm=s=>String(s||'').trim();
-  const findServices=name=>{
-    const list=window.__dabbarliServices||[];
-    return list.filter(s=>norm(s.specialty)===name||norm(s.name)===name);
-  };
+  const findServices=name=>(window.__dabbarliServices||[]).filter(s=>norm(s.specialty)===name||norm(s.name)===name);
   function renderCategoryDetails(type){
-    const data=details[type];
-    if(!data)return false;
-    const all=window.__dabbarliServices||[];
-    const items=data.items.map(name=>{
-      const matches=findServices(name);
-      const thumb='<div class="category-detail-thumb category-detail-design" aria-hidden="true">'+data.icon+'</div>';
-      const count=matches.length;
-      return '<button type="button" class="category-detail-item" data-generic-category="'+esc(name)+'">'+thumb+'<span class="category-detail-name">'+esc(name)+(count?'<small class="category-detail-count">'+count+' خدمة</small>':'')+'</span><span class="category-detail-arrow">‹</span></button>';
-    }).join('');
+    const data=details[type];if(!data)return false;
+    const items=data.items.map(name=>{const matches=findServices(name);const thumb='<div class="category-detail-thumb category-detail-design" aria-hidden="true">'+data.icon+'</div>';return '<button type="button" class="category-detail-item" data-generic-category="'+esc(name)+'">'+thumb+'<span class="category-detail-name">'+esc(name)+(matches.length?'<small class="category-detail-count">'+matches.length+' خدمة</small>':'')+'</span><span class="category-detail-arrow">‹</span></button>'}).join('');
     content.innerHTML='<div class="page-card"><div class="section-head"><h2>'+esc(type)+'</h2><button class="see-all" id="genericCategoryHome">‹ الرئيسية</button></div><div class="category-detail-list">'+items+'</div></div>';
     document.getElementById('genericCategoryHome')?.addEventListener('click',()=>home());
-    content.querySelectorAll('[data-generic-category]').forEach(b=>b.addEventListener('click',()=>{
-      const name=b.dataset.genericCategory;
-      const matches=findServices(name);
-      content.innerHTML='<div class="page-card"><div class="section-head"><h2>'+esc(name)+'</h2><button class="see-all" id="genericCategoryBack">‹ '+esc(type)+'</button></div><div class="services">'+(matches.length?matches.map(card).join(''):'<div class="empty">لا توجد خدمات منشورة في هذا التخصص بعد.</div>')+'</div></div>';
-      document.getElementById('genericCategoryBack')?.addEventListener('click',()=>renderCategoryDetails(type));
-    }));
+    content.querySelectorAll('[data-generic-category]').forEach(b=>b.addEventListener('click',()=>{const name=b.dataset.genericCategory;const matches=findServices(name);content.innerHTML='<div class="page-card"><div class="section-head"><h2>'+esc(name)+'</h2><button class="see-all" id="genericCategoryBack">‹ '+esc(type)+'</button></div><div class="services">'+(matches.length?matches.map(card).join(''):'<div class="empty">لا توجد خدمات منشورة في هذا التخصص بعد.</div>')+'</div></div>';document.getElementById('genericCategoryBack')?.addEventListener('click',()=>renderCategoryDetails(type))}));
     return true;
   }
   window.renderCategoryDetails=renderCategoryDetails;
   window.categoryDetails=details;
-  const wrap=()=>{
-    if(typeof window.category!=='function'){setTimeout(wrap,100);return}
-    if(window.category.__dabbarliAllCategoriesWrapped)return;
-    const original=window.category;
-    const wrapped=function(type){
-      const t=norm(type);
-      if(t==='النقل والمركبات'||t==='النقل والآليات')return original.apply(this,arguments);
-      if(details[t]){
-        window.__dabbarliServices=services.length?services:(window.__dabbarliServices||[]);
-        renderCategoryDetails(t);
-        return;
-      }
-      return original.apply(this,arguments);
-    };
-    wrapped.__dabbarliAllCategoriesWrapped=true;
-    window.category=wrapped;
-  };
+  const wrap=()=>{if(typeof window.category!=='function'){setTimeout(wrap,100);return}if(window.category.__dabbarliAllCategoriesWrapped)return;const original=window.category;const wrapped=function(type){const t=norm(type);if(t==='النقل والمركبات'||t==='النقل والآليات')return original.apply(this,arguments);if(details[t]){window.__dabbarliServices=services.length?services:(window.__dabbarliServices||[]);renderCategoryDetails(t);return}return original.apply(this,arguments)};wrapped.__dabbarliAllCategoriesWrapped=true;window.category=wrapped};
   wrap();setTimeout(wrap,250);setTimeout(wrap,1000);
 })();
 </script>
+<script src="category-details.js?v=20260911-22"></script>
 </body></html>
