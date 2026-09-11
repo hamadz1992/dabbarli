@@ -21,7 +21,15 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     .image-lightbox{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}
     .image-lightbox img{max-width:100%;max-height:100%;width:auto!important;height:auto!important;object-fit:contain!important;border-radius:10px;box-shadow:0 8px 35px rgba(0,0,0,.35)}
     .image-lightbox .image-close{position:absolute;top:14px;right:14px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.92);color:#222;font-size:28px;line-height:42px;cursor:pointer}
-    @media(max-width:520px){.detail .actions a{font-size:11px;padding:9px 3px}}
+    .category-detail-list{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+    .category-detail-item{width:100%;display:flex;direction:rtl;align-items:center;gap:16px;padding:12px 14px;border:0;border-radius:20px;background:#f7faf8;box-shadow:0 2px 10px rgba(20,60,45,.06);cursor:pointer;text-align:right;color:inherit}
+    .category-detail-item:active{transform:scale(.99)}
+    .category-detail-thumb{width:72px;height:72px;flex:0 0 72px;border-radius:14px;object-fit:cover;background:#e8f2ed}
+    .category-detail-placeholder{display:flex;align-items:center;justify-content:center;font-size:30px}
+    .category-detail-name{flex:1;font-size:18px;font-weight:800}
+    .category-detail-arrow{font-size:30px;color:#888;line-height:1}
+    .category-detail-count{display:block;margin-top:4px;font-size:12px;font-weight:500;color:#7a857f}
+    @media(max-width:520px){.detail .actions a{font-size:11px;padding:9px 3px}.category-detail-item{gap:12px;padding:10px 12px}.category-detail-thumb{width:70px;height:70px;flex-basis:70px}.category-detail-name{font-size:16px}.category-detail-arrow{font-size:26px}}
   `;
   document.head.appendChild(style);
   let currentServiceId=null;
@@ -86,7 +94,40 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     field.innerHTML='<label>رابط الصفحة / الموقع</label><input name="link" type="url" placeholder="https://...">';
     if(details){const detailsField=details.closest('.field');if(detailsField)detailsField.parentNode.insertBefore(field,detailsField);else form.appendChild(field)}else form.appendChild(field);
   }
-  function enhance(){const detail=document.querySelector('.detail');if(detail){moveExistingLink(detail);addStoredLink(detail);enableImageZoom(detail);addRating(detail)}ensureLinkField()}
+
+  const transportDetails=['سيارات أجرة','سيارات نقل','شاحنات نقل','شاحنات كبيرة','شاحنات الماء','شاحنات الغاز','جرارات','جرافات','حفارات','رافعات','شاحنات تبريد','نقل البضائع','نقل الأثاث','سائق خاص','سفريات','ميكانيكي','كهرباء سيارات','تصليح سيارات','تصليح شاحنات','غسيل سيارات','زيوت','إطارات','قطع غيار','بيع سيارات','كراء سيارات','دراجات نارية','إصلاح دراجات'];
+  function findTransportService(name){
+    const list=window.__dabbarliServices||[];
+    return list.find(s=>String(s.specialty||'').trim()===name||String(s.name||'').trim()===name);
+  }
+  function showTransportSpecialty(name){
+    const list=(window.__dabbarliServices||[]).filter(s=>String(s.specialty||'').trim()===name||String(s.name||'').trim()===name);
+    const html=list.length?list.map(s=>card(s)).join(''):'<div class="empty">لا توجد خدمات منشورة في هذا التخصص بعد.</div>';
+    content.innerHTML='<div class="page-card"><div class="section-head"><h2>'+esc(name)+'</h2><button class="see-all" id="transportBack">‹ النقل والمركبات</button></div><div class="services">'+html+'</div></div>';
+    document.getElementById('transportBack')?.addEventListener('click',()=>renderTransportDetails());
+  }
+  function renderTransportDetails(){
+    const list=window.__dabbarliServices||[];
+    const firstWithImage=list.find(s=>s.image_url||s.img);
+    const fallbackImg=firstWithImage?.image_url||firstWithImage?.img||'';
+    const items=transportDetails.map(name=>{
+      const s=findTransportService(name);
+      const src=s?.image_url||s?.img||fallbackImg;
+      const count=list.filter(x=>String(x.specialty||'').trim()===name||String(x.name||'').trim()===name).length;
+      const thumb=src?'<img class="category-detail-thumb" src="'+esc(src)+'" alt="">':'<div class="category-detail-thumb category-detail-placeholder">🚚</div>';
+      return '<button type="button" class="category-detail-item" data-transport="'+esc(name)+'">'+thumb+'<span class="category-detail-name">'+esc(name)+(count?'<small class="category-detail-count">'+count+' خدمة</small>':'')+'</span><span class="category-detail-arrow">‹</span></button>';
+    }).join('');
+    content.innerHTML='<div class="page-card"><div class="section-head"><h2>النقل والمركبات</h2><button class="see-all" id="transportHome">‹ الرئيسية</button></div><div class="category-detail-list">'+items+'</div></div>';
+    document.getElementById('transportHome')?.addEventListener('click',()=>home());
+    content.querySelectorAll('[data-transport]').forEach(b=>b.addEventListener('click',()=>showTransportSpecialty(b.dataset.transport)));
+  }
+  function enhanceCategoryDetails(){
+    const h=content.querySelector('.page-card .section-head h2');
+    if(!h)return;
+    const title=(h.textContent||'').trim();
+    if((title==='النقل والمركبات'||title==='النقل والآليات')&&!content.querySelector('.category-detail-list'))renderTransportDetails();
+  }
+  function enhance(){const detail=document.querySelector('.detail');if(detail){moveExistingLink(detail);addStoredLink(detail);enableImageZoom(detail);addRating(detail)}ensureLinkField();enhanceCategoryDetails()}
   document.addEventListener('click',e=>{const b=e.target.closest('button[onclick*="showDetail"]');if(!b)return;const m=String(b.getAttribute('onclick')||'').match(/showDetail\(['"]([^'"]+)['"]\)/);if(m)currentServiceId=m[1];setTimeout(enhance,50);setTimeout(enhance,300)},true);
   const observer=new MutationObserver(()=>{setTimeout(enhance,20);setTimeout(enhance,150)});observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
   setTimeout(ensureLinkField,300);
