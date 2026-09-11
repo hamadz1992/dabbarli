@@ -2,8 +2,6 @@
 window.SUPABASE_URL = "https://rrybfflettigvfgpfbyi.supabase.co";
 window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
 
-// تجهيز الصور قبل رفعها إلى Supabase.
-// يدعم JPG / PNG / WEBP وكذلك HEIC / HEIF من هواتف Android و iPhone.
 async function prepareServiceImage(file) {
   let source = file;
   const name = String(file?.name || '').toLowerCase();
@@ -107,40 +105,125 @@ document.addEventListener('submit', async function (event) {
   finally { if (button) { button.disabled = false; button.textContent = 'إرسال للمراجعة'; } }
 }, true);
 
-// تحسين عرض صور الخدمات دون تغيير بنية الصفحة.
-// الصورة تملأ الإطار بشكل متناسق بدل ظهور مساحات بيضاء كبيرة حولها.
 (function improveServiceImageDisplay(){
   const style = document.createElement('style');
   style.textContent = `
-    .service-img{object-fit:cover!important;object-position:center!important;background:#eee}
-    .detail-img{object-fit:cover!important;object-position:center!important;background:#eee}
-    .detail-img{cursor:zoom-in}
-    .image-lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}
-    .image-lightbox img{max-width:96vw;max-height:92vh;width:auto;height:auto;object-fit:contain;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
-    .image-lightbox .image-close{position:absolute;top:16px;right:16px;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.94);color:#122019;font-size:30px;line-height:1;cursor:pointer}
+    .service-img{object-fit:cover!important;object-position:center!important;background:#eee;cursor:pointer}
+    .detail-img{object-fit:contain!important;object-position:center!important;background:#eee;cursor:zoom-in}
+    .image-lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:18px}
+    .image-lightbox img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:8px}
+    .image-lightbox .close-image{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:30px;line-height:1}
+    .rating-box{margin-top:20px;padding:16px;border:1px solid #e7ede9;border-radius:18px;background:#f3faf6;text-align:right}
+    .rating-box-title{font-weight:800;font-size:16px;margin-bottom:8px}
+    .rating-choices{display:flex;direction:ltr;gap:5px;margin:7px 0 10px}
+    .rating-choice{font-size:31px;color:#c9cec9;cursor:pointer;padding:0 2px}
+    .rating-choice.selected{color:#e2a400}
+    .rating-submit{width:100%;margin-top:5px}
+    .detail-link{display:inline-block;margin-top:6px;color:#0b8a56;font-weight:700;text-decoration:underline}
   `;
   document.head.appendChild(style);
 })();
 
-// عند الضغط على صورة الخدمة داخل "عرض المعلومات"، افتحها بالحجم الكامل.
-document.addEventListener('click', function(event){
-  const image = event.target.closest('.detail-img');
-  if (!image) return;
-  event.preventDefault();
-  let box = document.querySelector('.image-lightbox');
-  if (!box) {
-    box = document.createElement('div');
+(function addDetailFeatures(){
+  let currentServiceId = null;
+  const escHtml = (value) => String(value ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const getFingerprint = () => {
+    let fp = localStorage.getItem('dabbarli_rating_fp');
+    if (!fp) { fp = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()); localStorage.setItem('dabbarli_rating_fp', fp); }
+    return fp;
+  };
+  const openImage = (src) => {
+    const old = document.querySelector('.image-lightbox');
+    if (old) old.remove();
+    const box = document.createElement('div');
     box.className = 'image-lightbox';
-    box.innerHTML = '<button class="image-close" aria-label="إغلاق">×</button><img alt="">';
+    box.innerHTML = `<button class="close-image" aria-label="إغلاق">×</button><img src="${escHtml(src)}" alt="الصورة بالحجم الكامل">`;
+    box.addEventListener('click', e => { if (e.target === box || e.target.classList.contains('close-image')) box.remove(); });
     document.body.appendChild(box);
-    box.addEventListener('click', function(e){
-      if (e.target === box || e.target.classList.contains('image-close')) box.remove();
-    });
+  };
+  const setupImage = (img) => {
+    if (!img || img.dataset.lightboxReady) return;
+    img.dataset.lightboxReady = '1';
+    img.addEventListener('click', () => openImage(img.currentSrc || img.src));
+  };
+  const setupDetailsText = (detail) => {
+    const p = detail.querySelector('.detail > p, .detail p');
+    if (!p || p.dataset.linksReady) return;
+    p.dataset.linksReady = '1';
+    const text = p.textContent || '';
+    const urlRe = /(https?:\/\/[^\s]+)/g;
+    let last = 0, html = '', match;
+    while ((match = urlRe.exec(text))) {
+      html += escHtml(text.slice(last, match.index));
+      const cleanUrl = match[0].replace(/[),.،]+$/,'');
+      html += `<a class="detail-link" href="${escHtml(cleanUrl)}" target="_blank" rel="noopener">🔗 فتح الرابط</a>`;
+      last = match.index + match[0].length;
+    }
+    if (html) { html += escHtml(text.slice(last)); p.innerHTML = html; }
+  };
+  const ensureRating = async (detail) => {
+    if (!currentServiceId || detail.querySelector('.rating-box')) return;
+    const box = document.createElement('div');
+    box.className = 'rating-box';
+    box.innerHTML = `<div class="rating-box-title">قيّم هذه الخدمة</div><div class="rating-choices" aria-label="اختر التقييم"><button class="rating-choice" data-rating="1">★</button><button class="rating-choice" data-rating="2">★</button><button class="rating-choice" data-rating="3">★</button><button class="rating-choice" data-rating="4">★</button><button class="rating-choice" data-rating="5">★</button></div><button class="primary rating-submit" disabled>إرسال التقييم</button><div class="muted rating-status"></div>`;
+    const actions = detail.querySelector('.actions');
+    detail.insertBefore(box, actions || null);
+    let selected = 0;
+    box.querySelectorAll('.rating-choice').forEach(btn => btn.addEventListener('click', () => {
+      selected = Number(btn.dataset.rating);
+      box.querySelectorAll('.rating-choice').forEach(x => x.classList.toggle('selected', Number(x.dataset.rating) <= selected));
+      box.querySelector('.rating-submit').disabled = false;
+    }));
+    const submit = box.querySelector('.rating-submit');
+    const status = box.querySelector('.rating-status');
+    try {
+      const ratingClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      const {data: mine} = await ratingClient.from('ratings').select('rating').eq('service_id', currentServiceId).eq('fingerprint', getFingerprint()).limit(1);
+      if (mine?.length) status.textContent = 'لقد قيّمت هذه الخدمة من قبل.';
+      submit.addEventListener('click', async () => {
+        if (!selected) return;
+        submit.disabled = true;
+        status.textContent = 'جاري إرسال التقييم...';
+        const {error} = await ratingClient.from('ratings').insert({service_id:currentServiceId,rating:selected,fingerprint:getFingerprint()});
+        if (error) {
+          status.textContent = error.code === '23505' ? 'لقد قيّمت هذه الخدمة من قبل.' : 'تعذر إرسال التقييم، حاول مرة أخرى.';
+          submit.disabled = false;
+          return;
+        }
+        status.textContent = 'شكرًا لك، تم تسجيل تقييمك.';
+        box.querySelectorAll('.rating-choice').forEach(x => x.disabled = true);
+        await refreshRating(detail, ratingClient);
+      });
+    } catch (error) { console.error('Rating setup error:', error); }
+  };
+  const refreshRating = async (detail, ratingClient) => {
+    try {
+      const {data, error} = await ratingClient.from('ratings').select('rating').eq('service_id', currentServiceId);
+      if (error || !data) return;
+      const count = data.length;
+      const avg = count ? data.reduce((sum,row)=>sum+Number(row.rating||0),0)/count : 0;
+      const row = detail.querySelector('.detail-current-rating');
+      if (row) row.innerHTML = `<span class="star">★</span><span>${avg.toFixed(1)} (${count})</span>`;
+    } catch (error) { console.error('Rating refresh error:', error); }
+  };
+  const enhance = () => {
+    const detail = document.querySelector('.detail');
+    if (!detail) return;
+    const img = detail.querySelector('.detail-img');
+    setupImage(img);
+    setupDetailsText(detail);
+    if (!detail.querySelector('.detail-current-rating')) {
+      const rows = detail.querySelectorAll('.rating-row');
+      const row = rows[rows.length - 1];
+      if (row) row.classList.add('detail-current-rating');
+    }
+    ensureRating(detail);
+  };
+  const observer = new MutationObserver(enhance);
+  observer.observe(document.getElementById('content') || document.body, {childList:true,subtree:true});
+  window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelector('.image-lightbox')?.remove(); });
+  const originalShowDetail = window.showDetail;
+  if (typeof originalShowDetail === 'function') {
+    window.showDetail = function(id){ currentServiceId = id; originalShowDetail(id); setTimeout(enhance, 0); };
   }
-  box.querySelector('img').src = image.currentSrc || image.src;
-  box.querySelector('img').alt = image.alt || 'صورة الخدمة';
-});
-
-document.addEventListener('keydown', function(event){
-  if (event.key === 'Escape') document.querySelector('.image-lightbox')?.remove();
-});
+})();
