@@ -22,13 +22,13 @@
       ['دروس ابتدائي','📚'],['دروس متوسط','📘'],['دروس ثانوي','📖'],['تحضير بكالوريا','🎓'],['لغات','🗣️'],['رياضيات','➗'],['فيزياء','🔬'],['كيمياء','🧪'],['إعلام آلي','💻'],['دروس خصوصية','✏️']
     ],
     'الجمال والعناية':[
-      ['حلاقة رجالية','💈'],['تجميل نسائي','💄'],['تصفيف شعر','💇'],['مكياج','💋'],['عناية بالبشرة','✨'],['عناية بالأظافر','💅'],['حمام وعناية','🧖'],['عطور','🌸'],['تصوير مناسبات','📸'],['حجامة','🩹']
+      ['حلاقة رجالية','💈'],['تجميل نسائي','💄'],['تصفيف شعر','💇'],['مكياج','💋'],['عناية بالبشرة','✨'],['عناية بالأظافر','💅'],['حمام وعناية','🧖'],['عطور','🌸'],['حجامة','🩹']
     ],
     'خدمات أخرى':[
-      ['تصوير','📷'],['ترجمة','🌐'],['طباعة','🖨️'],['دعاية وإشهار','📣'],['محاسبة','🧾'],['استشارات','💼'],['خدمات قانونية','⚖️'],['شحن وتوصيل','📦'],['تنظيم مناسبات','🎉'],['خدمات عامة','✨']
+      ['خدمات إدارية','📋'],['استخراج وثائق','📄'],['كتابة عرائض','✍️'],['ترجمة','🌐'],['محاسبة','🧾'],['خدمات تأمين','🛡️'],['استشارات','💼'],['خدمات قانونية','⚖️'],['خدمات عقود','📝'],['خدمات مالية','💰'],['خدمات مهنية','🧑‍💼'],['خدمات عامة','✨']
     ]
   };
-  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const esc=s=>String(s??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
   const services=()=>window.__dabbarliServices||[];
   function renderGroup(category){
     const items=groups[category];
@@ -37,8 +37,8 @@
     const html=items.map(([name,icon])=>{
       const count=list.filter(s=>String(s.specialty||'').trim()===name||String(s.name||'').trim()===name).length;
       return '<button type="button" class="category-detail-item" data-generic-specialty="'+esc(name)+'">'+
-        '<div class="category-detail-thumb category-detail-design" aria-hidden="true">'+icon+'</div>'+
-        '<span class="category-detail-name">'+esc(name)+(count?'<small class="category-detail-count">'+count+' خدمة</small>':'')+'</span>'+
+        '<div class="category-detail-thumb category-detail-design" aria-hidden="true">'+icon+'</div>'+ 
+        '<span class="category-detail-name">'+esc(name)+(count?'<small class="category-detail-count">'+count+' خدمة</small>':'')+'</span>'+ 
         '<span class="category-detail-arrow">‹</span></button>';
     }).join('');
     content.innerHTML='<div class="page-card"><div class="section-head"><h2>'+esc(category)+'</h2><button class="see-all" id="genericCategoryHome">‹ الرئيسية</button></div><div class="category-detail-list">'+html+'</div></div>';
