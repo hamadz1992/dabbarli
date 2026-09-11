@@ -117,10 +117,15 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
       const thumb=src?'<img class="category-detail-thumb" src="'+esc(src)+'" alt="">':'<div class="category-detail-thumb category-detail-placeholder">🚚</div>';
       return '<button type="button" class="category-detail-item" data-transport="'+esc(name)+'">'+thumb+'<span class="category-detail-name">'+esc(name)+(count?'<small class="category-detail-count">'+count+' خدمة</small>':'')+'</span><span class="category-detail-arrow">‹</span></button>';
     }).join('');
-    content.innerHTML='<div class="page-card"><div class="section-head"><h2>النقل والمركبات</h2><button class="see-all" id="transportHome">‹ الرئيسية</button></div><div class="category-detail-list">'+items+'</div></div>';
+    content.innerHTML='<div class="page-card"><div class="section-head"><h2>النقل والمركبات</h2><button class="see-all" id="transportHome">‹ الرئيسية</button></div><div class="category-detail-list">'+items+'</div>';
     document.getElementById('transportHome')?.addEventListener('click',()=>home());
     content.querySelectorAll('[data-transport]').forEach(b=>b.addEventListener('click',()=>showTransportSpecialty(b.dataset.transport)));
   }
+
+  // Expose these handlers to the main page script.
+  window.renderTransportDetails=renderTransportDetails;
+  window.showTransportSpecialty=showTransportSpecialty;
+
   function enhanceCategoryDetails(){
     const h=content.querySelector('.page-card .section-head h2');
     if(!h)return;
