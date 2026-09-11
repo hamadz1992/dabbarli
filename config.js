@@ -25,7 +25,7 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     .category-detail-item{width:100%;display:flex;direction:rtl;align-items:center;gap:16px;padding:12px 14px;border:0;border-radius:20px;background:#f7faf8;box-shadow:0 2px 10px rgba(20,60,45,.06);cursor:pointer;text-align:right;color:inherit}
     .category-detail-item:active{transform:scale(.99)}
     .category-detail-thumb{width:72px;height:72px;flex:0 0 72px;border-radius:14px;object-fit:cover;background:#e8f2ed}
-    .category-detail-design{display:flex;align-items:center;justify-content:center;font-size:34px;background:linear-gradient(145deg,#eaf8f0,#d7eee2);border:1px solid #d4e9dd;box-sizing:border-box}
+    .category-detail-placeholder,.category-detail-design{display:flex;align-items:center;justify-content:center;font-size:34px;background:linear-gradient(145deg,#eaf8f0,#d7eee2);border:1px solid #d4e9dd;box-sizing:border-box}
     .category-detail-name{flex:1;font-size:18px;font-weight:800}
     .category-detail-arrow{font-size:30px;color:#888;line-height:1}
     .category-detail-count{display:block;margin-top:4px;font-size:12px;font-weight:500;color:#7a857f}
@@ -35,126 +35,25 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
   let currentServiceId=null;
   const fingerprint=()=>{let x=localStorage.getItem('dabbarli_rating_fp');if(!x){x=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();localStorage.setItem('dabbarli_rating_fp',x)}return x};
   function makeLink(url){const a=document.createElement('a');a.className='detail-link stored-detail-link';a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='🔗 رابط';return a}
-  function moveExistingLink(detail){
-    if(!detail)return;
-    const actions=detail.querySelector('.actions');
-    if(!actions)return;
-    const candidates=[...detail.querySelectorAll('.stored-detail-link,[data-link-button]')];
-    candidates.forEach(a=>{if(a.parentElement!==actions)actions.appendChild(a)});
-    [...detail.querySelectorAll('a')].forEach(a=>{
-      const text=(a.textContent||'').trim();
-      if(a.parentElement!==actions && /فتح الرابط|الرابط|🔗/.test(text))actions.appendChild(a);
-    });
-  }
-  function addStoredLink(detail){
-    if(!detail)return;
-    const actions=detail.querySelector('.actions');
-    if(!actions)return;
-    moveExistingLink(detail);
-    if(actions.querySelector('.stored-detail-link'))return;
-    let service=null;try{service=window.__dabbarliServices?.find(x=>String(x.id)===String(currentServiceId))}catch(e){}
-    const url=String(service?.link||'').trim();
-    if(url)actions.appendChild(makeLink(url));
-  }
-  function openImage(url){
-    if(!url)return;
-    const old=document.querySelector('.image-lightbox');if(old)old.remove();
-    const box=document.createElement('div');box.className='image-lightbox';
-    box.innerHTML='<button class="image-close" type="button" aria-label="إغلاق">×</button><img alt="صورة الخدمة">';
-    box.querySelector('img').src=url;
-    const close=()=>box.remove();
-    box.querySelector('.image-close').onclick=close;
-    box.addEventListener('click',e=>{if(e.target===box)close()});
-    document.addEventListener('keydown',function escImage(e){if(e.key==='Escape'){close();document.removeEventListener('keydown',escImage)}});
-    document.body.appendChild(box);
-  }
-  function enableImageZoom(detail){
-    const img=detail?.querySelector('.detail-img');
-    if(!img||img.dataset.zoomEnabled)return;
-    img.dataset.zoomEnabled='1';
-    img.addEventListener('click',()=>openImage(img.currentSrc||img.src));
-  }
-  async function addRating(detail){
-    if(!currentServiceId||detail.querySelector('.rating-box'))return;
-    const box=document.createElement('div');box.className='rating-box';
-    box.innerHTML='<div class="rating-box-title">قيّم هذه الخدمة</div><div class="rating-choices"><button type="button" class="rating-choice" data-r="1">★</button><button type="button" class="rating-choice" data-r="2">★</button><button type="button" class="rating-choice" data-r="3">★</button><button type="button" class="rating-choice" data-r="4">★</button><button type="button" class="rating-choice" data-r="5">★</button></div><button type="button" class="primary rating-submit" disabled>إرسال التقييم</button><div class="muted rating-status"></div>';
-    const actions=detail.querySelector('.actions');detail.insertBefore(box,actions||null);
-    const c=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);let selected=0;
-    box.querySelectorAll('.rating-choice').forEach(b=>b.onclick=()=>{selected=Number(b.dataset.r);box.querySelectorAll('.rating-choice').forEach(x=>x.classList.toggle('selected',Number(x.dataset.r)<=selected));box.querySelector('.rating-submit').disabled=false});
-    const status=box.querySelector('.rating-status'),submit=box.querySelector('.rating-submit');
-    try{const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId).eq('fingerprint',fingerprint()).limit(1);if(data?.length){status.textContent='لقد قيّمت هذه الخدمة من قبل.';box.querySelectorAll('.rating-choice').forEach(x=>x.disabled=true)}}catch(e){}
-    try{const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId);if(data){const avg=data.length?data.reduce((a,x)=>a+Number(x.rating||0),0)/data.length:0;const row=detail.querySelector('.rating-row');if(row)row.innerHTML='<span class="star">★</span><span>'+avg.toFixed(1)+' ('+data.length+')</span>'}}catch(e){}
-    submit.onclick=async()=>{if(!selected)return;submit.disabled=true;status.textContent='جاري إرسال التقييم...';const {error}=await c.from('ratings').insert({service_id:currentServiceId,rating:selected,fingerprint:fingerprint()});if(error){status.textContent=error.code==='23505'?'لقد قيّمت هذه الخدمة من قبل.':'تعذر إرسال التقييم، حاول مرة أخرى.';return}status.textContent='شكرًا لك، تم تسجيل تقييمك.';box.querySelectorAll('.rating-choice').forEach(x=>x.disabled=true);const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId);if(data){const avg=data.reduce((a,x)=>a+Number(x.rating||0),0)/data.length;const row=detail.querySelector('.rating-row');if(row)row.innerHTML='<span class="star">★</span><span>'+avg.toFixed(1)+' ('+data.length+')</span>'}};
-  }
-  function ensureLinkField(){
-    const form=document.getElementById('addForm');
-    if(!form||form.querySelector('[name="link"]'))return;
-    const details=form.querySelector('[name="details"]');
-    const field=document.createElement('div');field.className='field link-field';
-    field.innerHTML='<label>رابط الصفحة / الموقع</label><input name="link" type="url" placeholder="https://...">';
-    if(details){const detailsField=details.closest('.field');if(detailsField)detailsField.parentNode.insertBefore(field,detailsField);else form.appendChild(field)}else form.appendChild(field);
-  }
-
+  function moveExistingLink(detail){if(!detail)return;const actions=detail.querySelector('.actions');if(!actions)return;const candidates=[...detail.querySelectorAll('.stored-detail-link,[data-link-button]')];candidates.forEach(a=>{if(a.parentElement!==actions)actions.appendChild(a)});[...detail.querySelectorAll('a')].forEach(a=>{const text=(a.textContent||'').trim();if(a.parentElement!==actions&&/فتح الرابط|الرابط|🔗/.test(text))actions.appendChild(a)})}
+  function addStoredLink(detail){if(!detail)return;const actions=detail.querySelector('.actions');if(!actions)return;moveExistingLink(detail);if(actions.querySelector('.stored-detail-link'))return;let service=null;try{service=window.__dabbarliServices?.find(x=>String(x.id)===String(currentServiceId))}catch(e){}const url=String(service?.link||'').trim();if(url)actions.appendChild(makeLink(url))}
+  function openImage(url){if(!url)return;const old=document.querySelector('.image-lightbox');if(old)old.remove();const box=document.createElement('div');box.className='image-lightbox';box.innerHTML='<button class="image-close" type="button" aria-label="إغلاق">×</button><img alt="صورة الخدمة">';box.querySelector('img').src=url;const close=()=>box.remove();box.querySelector('.image-close').onclick=close;box.addEventListener('click',e=>{if(e.target===box)close()});document.addEventListener('keydown',function escImage(e){if(e.key==='Escape'){close();document.removeEventListener('keydown',escImage)}});document.body.appendChild(box)}
+  function enableImageZoom(detail){const img=detail?.querySelector('.detail-img');if(!img||img.dataset.zoomEnabled)return;img.dataset.zoomEnabled='1';img.addEventListener('click',()=>openImage(img.currentSrc||img.src))}
+  async function addRating(detail){if(!currentServiceId||detail.querySelector('.rating-box'))return;const box=document.createElement('div');box.className='rating-box';box.innerHTML='<div class="rating-box-title">قيّم هذه الخدمة</div><div class="rating-choices"><button type="button" class="rating-choice" data-r="1">★</button><button type="button" class="rating-choice" data-r="2">★</button><button type="button" class="rating-choice" data-r="3">★</button><button type="button" class="rating-choice" data-r="4">★</button><button type="button" class="rating-choice" data-r="5">★</button></div><button type="button" class="primary rating-submit" disabled>إرسال التقييم</button><div class="muted rating-status"></div>';const actions=detail.querySelector('.actions');detail.insertBefore(box,actions||null);const c=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);let selected=0;box.querySelectorAll('.rating-choice').forEach(b=>b.onclick=()=>{selected=Number(b.dataset.r);box.querySelectorAll('.rating-choice').forEach(x=>x.classList.toggle('selected',Number(x.dataset.r)<=selected));box.querySelector('.rating-submit').disabled=false});const status=box.querySelector('.rating-status'),submit=box.querySelector('.rating-submit');try{const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId).eq('fingerprint',fingerprint()).limit(1);if(data?.length){status.textContent='لقد قيّمت هذه الخدمة من قبل.';box.querySelectorAll('.rating-choice').forEach(x=>x.disabled=true)}}catch(e){}try{const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId);if(data){const avg=data.length?data.reduce((a,x)=>a+Number(x.rating||0),0)/data.length:0;const row=detail.querySelector('.rating-row');if(row)row.innerHTML='<span class="star">★</span><span>'+avg.toFixed(1)+' ('+data.length+')</span>'}}catch(e){}submit.onclick=async()=>{if(!selected)return;submit.disabled=true;status.textContent='جاري إرسال التقييم...';const {error}=await c.from('ratings').insert({service_id:currentServiceId,rating:selected,fingerprint:fingerprint()});if(error){status.textContent=error.code==='23505'?'لقد قيّمت هذه الخدمة من قبل.':'تعذر إرسال التقييم، حاول مرة أخرى.';return}status.textContent='شكرًا لك، تم تسجيل تقييمك.';box.querySelectorAll('.rating-choice').forEach(x=>x.disabled=true);const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId);if(data){const avg=data.reduce((a,x)=>a+Number(x.rating||0),0)/data.length;const row=detail.querySelector('.rating-row');if(row)row.innerHTML='<span class="star">★</span><span>'+avg.toFixed(1)+' ('+data.length+')</span>'}}}
+  function ensureLinkField(){const form=document.getElementById('addForm');if(!form||form.querySelector('[name="link"]'))return;const details=form.querySelector('[name="details"]');const field=document.createElement('div');field.className='field link-field';field.innerHTML='<label>رابط الصفحة / الموقع</label><input name="link" type="url" placeholder="https://...">';if(details){const detailsField=details.closest('.field');if(detailsField)detailsField.parentNode.insertBefore(field,detailsField);else form.appendChild(field)}else form.appendChild(field)}
   const transportDetails=['سيارات أجرة','سيارات نقل','شاحنات نقل','شاحنات كبيرة','شاحنات الماء','شاحنات الغاز','جرارات','جرافات','حفارات','رافعات','شاحنات تبريد','نقل البضائع','نقل الأثاث','سائق خاص','سفريات','ميكانيكي','كهرباء سيارات','تصليح سيارات','تصليح شاحنات','غسيل سيارات','زيوت','إطارات','قطع غيار','بيع سيارات','كراء سيارات','دراجات نارية','إصلاح دراجات'];
-  const transportDesigns={
-    'سيارات أجرة':'🚕','سيارات نقل':'🚐','شاحنات نقل':'🚚','شاحنات كبيرة':'🚛','شاحنات الماء':'💧','شاحنات الغاز':'🔥','جرارات':'🚜','جرافات':'🏗️','حفارات':'🚧','رافعات':'🏗️','شاحنات تبريد':'❄️','نقل البضائع':'📦','نقل الأثاث':'🛋️','سائق خاص':'👨‍✈️','سفريات':'🚌','ميكانيكي':'🔧','كهرباء سيارات':'⚡','تصليح سيارات':'🛠️','تصليح شاحنات':'🔩','غسيل سيارات':'🧽','زيوت':'🛢️','إطارات':'🛞','قطع غيار':'⚙️','بيع سيارات':'🚘','كراء سيارات':'🔑','دراجات نارية':'🏍️','إصلاح دراجات':'🔩'
-  };
-  function findTransportService(name){
-    const list=window.__dabbarliServices||[];
-    return list.find(s=>String(s.specialty||'').trim()===name||String(s.name||'').trim()===name);
-  }
+  const transportDesigns={'سيارات أجرة':'🚕','سيارات نقل':'🚐','شاحنات نقل':'🚚','شاحنات كبيرة':'🚛','شاحنات الماء':'💧','شاحنات الغاز':'🔥','جرارات':'🚜','جرافات':'🏗️','حفارات':'🚧','رافعات':'🏗️','شاحنات تبريد':'❄️','نقل البضائع':'📦','نقل الأثاث':'🛋️','سائق خاص':'👨‍✈️','سفريات':'🚌','ميكانيكي':'🔧','كهرباء سيارات':'⚡','تصليح سيارات':'🛠️','تصليح شاحنات':'🔩','غسيل سيارات':'🧽','زيوت':'🛢️','إطارات':'🛞','قطع غيار':'⚙️','بيع سيارات':'🚘','كراء سيارات':'🔑','دراجات نارية':'🏍️','إصلاح دراجات':'🔩'};
+  function findTransportService(name){const list=window.__dabbarliServices||[];return list.find(s=>String(s.specialty||'').trim()===name||String(s.name||'').trim()===name)}
   function transportDesignFor(name){return transportDesigns[name]||'🚚'}
-  function showTransportSpecialty(name){
-    const list=(window.__dabbarliServices||[]).filter(s=>String(s.specialty||'').trim()===name||String(s.name||'').trim()===name);
-    const html=list.length?list.map(s=>card(s)).join(''):'<div class="empty">لا توجد خدمات منشورة في هذا التخصص بعد.</div>';
-    content.innerHTML='<div class="page-card"><div class="section-head"><h2>'+esc(name)+'</h2><button class="see-all" id="transportBack">‹ النقل والمركبات</button></div><div class="services">'+html+'</div></div>';
-    document.getElementById('transportBack')?.addEventListener('click',()=>renderTransportDetails());
-  }
-  function renderTransportDetails(){
-    const list=window.__dabbarliServices||[];
-    const firstWithImage=list.find(s=>s.image_url||s.img);
-    const fallbackImg=firstWithImage?.image_url||firstWithImage?.img||'';
-    const items=transportDetails.map(name=>{
-      const s=findTransportService(name);
-      const src=s?.image_url||s?.img||fallbackImg;
-      const count=list.filter(x=>String(x.specialty||'').trim()===name||String(x.name||'').trim()===name).length;
-      const thumb='<div class="category-detail-thumb category-detail-design" aria-hidden="true">'+transportDesignFor(name)+'</div>';
-      return '<button type="button" class="category-detail-item" data-transport="'+esc(name)+'">'+thumb+'<span class="category-detail-name">'+esc(name)+(count?'<small class="category-detail-count">'+count+' خدمة</small>':'')+'</span><span class="category-detail-arrow">‹</span></button>';
-    }).join('');
-    content.innerHTML='<div class="page-card"><div class="section-head"><h2>النقل والمركبات</h2><button class="see-all" id="transportHome">‹ الرئيسية</button></div><div class="category-detail-list">'+items+'</div></div>';
-    document.getElementById('transportHome')?.addEventListener('click',()=>home());
-    content.querySelectorAll('[data-transport]').forEach(b=>b.addEventListener('click',()=>showTransportSpecialty(b.dataset.transport)));
-  }
-
-  window.renderTransportDetails=renderTransportDetails;
-  window.showTransportSpecialty=showTransportSpecialty;
-
-  function enhanceCategoryDetails(){
-    const h=content.querySelector('.page-card .section-head h2');
-    if(!h)return;
-    const title=(h.textContent||'').trim().replace(/^[^\u0600-\u06FF]+/,'').trim();
-    if((title.includes('النقل والمركبات')||title.includes('النقل والآليات'))&&!content.querySelector('.category-detail-list'))renderTransportDetails();
-  }
+  function showTransportSpecialty(name){const list=(window.__dabbarliServices||[]).filter(s=>String(s.specialty||'').trim()===name||String(s.name||'').trim()===name);const html=list.length?list.map(s=>card(s)).join(''):'<div class="empty">لا توجد خدمات منشورة في هذا التخصص بعد.</div>';content.innerHTML='<div class="page-card"><div class="section-head"><h2>'+esc(name)+'</h2><button class="see-all" id="transportBack">‹ النقل والمركبات</button></div><div class="services">'+html+'</div></div>';document.getElementById('transportBack')?.addEventListener('click',()=>renderTransportDetails())}
+  function renderTransportDetails(){const list=window.__dabbarliServices||[];const items=transportDetails.map(name=>{const count=list.filter(x=>String(x.specialty||'').trim()===name||String(x.name||'').trim()===name).length;const thumb='<div class="category-detail-thumb category-detail-design" aria-hidden="true">'+transportDesignFor(name)+'</div>';return '<button type="button" class="category-detail-item" data-transport="'+esc(name)+'">'+thumb+'<span class="category-detail-name">'+esc(name)+(count?'<small class="category-detail-count">'+count+' خدمة</small>':'')+'</span><span class="category-detail-arrow">‹</span></button>'}).join('');content.innerHTML='<div class="page-card"><div class="section-head"><h2>النقل والمركبات</h2><button class="see-all" id="transportHome">‹ الرئيسية</button></div><div class="category-detail-list">'+items+'</div></div>';document.getElementById('transportHome')?.addEventListener('click',()=>home());content.querySelectorAll('[data-transport]').forEach(b=>b.addEventListener('click',()=>showTransportSpecialty(b.dataset.transport)))}
+  window.renderTransportDetails=renderTransportDetails;window.showTransportSpecialty=showTransportSpecialty;
+  function enhanceCategoryDetails(){const h=content.querySelector('.page-card .section-head h2');if(!h)return;const title=(h.textContent||'').trim().replace(/^[^\u0600-\u06FF]+/,'').trim();if((title.includes('النقل والمركبات')||title.includes('النقل والآليات'))&&!content.querySelector('.category-detail-list'))renderTransportDetails()}
   function enhance(){const detail=document.querySelector('.detail');if(detail){moveExistingLink(detail);addStoredLink(detail);enableImageZoom(detail);addRating(detail)}ensureLinkField();enhanceCategoryDetails()}
   document.addEventListener('click',e=>{const b=e.target.closest('button[onclick*="showDetail"]');if(!b)return;const m=String(b.getAttribute('onclick')||'').match(/showDetail\(['"]([^'"]+)['"]\)/);if(m)currentServiceId=m[1];setTimeout(enhance,50);setTimeout(enhance,300)},true);
   const observer=new MutationObserver(()=>{setTimeout(enhance,20);setTimeout(enhance,150)});observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
-  const wrapTransportCategory=()=>{
-    if(typeof window.category!=='function'){setTimeout(wrapTransportCategory,100);return}
-    if(window.category.__dabbarliTransportWrapped)return;
-    const original=window.category;
-    window.category=function(type){
-      const t=String(type||'').trim();
-      if(t.includes('النقل والمركبات')||t.includes('النقل والآليات')){
-        window.__dabbarliServices=services.length?services:(window.__dabbarliServices||[]);
-        renderTransportDetails();
-        return;
-      }
-      return original.apply(this,arguments);
-    };
-    window.category.__dabbarliTransportWrapped=true;
-  };
-  setTimeout(wrapTransportCategory,50);
-  setTimeout(wrapTransportCategory,300);
-  setTimeout(wrapTransportCategory,1000);
+  const wrapTransportCategory=()=>{if(typeof window.category!=='function'){setTimeout(wrapTransportCategory,100);return}if(window.category.__dabbarliTransportWrapped)return;const original=window.category;window.category=function(type){const t=String(type||'').trim();if(t.includes('النقل والمركبات')||t.includes('النقل والآليات')){window.__dabbarliServices=services.length?services:(window.__dabbarliServices||[]);renderTransportDetails();return}return original.apply(this,arguments)};window.category.__dabbarliTransportWrapped=true};
+  setTimeout(wrapTransportCategory,50);setTimeout(wrapTransportCategory,300);setTimeout(wrapTransportCategory,1000);
   setTimeout(ensureLinkField,300);
+  const categoryScript=document.createElement('script');categoryScript.src='category-details.js?v=20260911-20';document.head.appendChild(categoryScript);
 })();
