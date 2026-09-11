@@ -17,6 +17,10 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     .rating-submit{width:100%;margin-top:5px}
     .link-field{padding:12px;border:1px solid #dce7e1;border-radius:14px;background:#f7fbf9}
     .link-field label{font-weight:800}
+    .detail .detail-img{cursor:zoom-in}
+    .image-lightbox{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}
+    .image-lightbox img{max-width:100%;max-height:100%;width:auto!important;height:auto!important;object-fit:contain!important;border-radius:10px;box-shadow:0 8px 35px rgba(0,0,0,.35)}
+    .image-lightbox .image-close{position:absolute;top:14px;right:14px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.92);color:#222;font-size:28px;line-height:42px;cursor:pointer}
     @media(max-width:520px){.detail .actions a{font-size:11px;padding:9px 3px}}
   `;
   document.head.appendChild(style);
@@ -44,6 +48,24 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     const url=String(service?.link||'').trim();
     if(url)actions.appendChild(makeLink(url));
   }
+  function openImage(url){
+    if(!url)return;
+    const old=document.querySelector('.image-lightbox');if(old)old.remove();
+    const box=document.createElement('div');box.className='image-lightbox';
+    box.innerHTML='<button class="image-close" type="button" aria-label="إغلاق">×</button><img alt="صورة الخدمة">';
+    box.querySelector('img').src=url;
+    const close=()=>box.remove();
+    box.querySelector('.image-close').onclick=close;
+    box.addEventListener('click',e=>{if(e.target===box)close()});
+    document.addEventListener('keydown',function escImage(e){if(e.key==='Escape'){close();document.removeEventListener('keydown',escImage)}});
+    document.body.appendChild(box);
+  }
+  function enableImageZoom(detail){
+    const img=detail?.querySelector('.detail-img');
+    if(!img||img.dataset.zoomEnabled)return;
+    img.dataset.zoomEnabled='1';
+    img.addEventListener('click',()=>openImage(img.currentSrc||img.src));
+  }
   async function addRating(detail){
     if(!currentServiceId||detail.querySelector('.rating-box'))return;
     const box=document.createElement('div');box.className='rating-box';
@@ -64,7 +86,7 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     field.innerHTML='<label>رابط الصفحة / الموقع</label><input name="link" type="url" placeholder="https://...">';
     if(details){const detailsField=details.closest('.field');if(detailsField)detailsField.parentNode.insertBefore(field,detailsField);else form.appendChild(field)}else form.appendChild(field);
   }
-  function enhance(){const detail=document.querySelector('.detail');if(detail){moveExistingLink(detail);addStoredLink(detail);addRating(detail)}ensureLinkField()}
+  function enhance(){const detail=document.querySelector('.detail');if(detail){moveExistingLink(detail);addStoredLink(detail);enableImageZoom(detail);addRating(detail)}ensureLinkField()}
   document.addEventListener('click',e=>{const b=e.target.closest('button[onclick*="showDetail"]');if(!b)return;const m=String(b.getAttribute('onclick')||'').match(/showDetail\(['"]([^'"]+)['"]\)/);if(m)currentServiceId=m[1];setTimeout(enhance,50);setTimeout(enhance,300)},true);
   const observer=new MutationObserver(()=>{setTimeout(enhance,20);setTimeout(enhance,150)});observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
   setTimeout(ensureLinkField,300);
