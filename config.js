@@ -22,13 +22,27 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
   document.head.appendChild(style);
   let currentServiceId=null;
   const fingerprint=()=>{let x=localStorage.getItem('dabbarli_rating_fp');if(!x){x=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();localStorage.setItem('dabbarli_rating_fp',x)}return x};
-  function makeLink(url){const a=document.createElement('a');a.className='detail-link stored-detail-link';a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='🔗 الرابط';return a}
+  function makeLink(url){const a=document.createElement('a');a.className='detail-link stored-detail-link';a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='🔗 رابط';return a}
+  function moveExistingLink(detail){
+    if(!detail)return;
+    const actions=detail.querySelector('.actions');
+    if(!actions)return;
+    const candidates=[...detail.querySelectorAll('.stored-detail-link,[data-link-button]')];
+    candidates.forEach(a=>{if(a.parentElement!==actions)actions.appendChild(a)});
+    [...detail.querySelectorAll('a')].forEach(a=>{
+      const text=(a.textContent||'').trim();
+      if(a.parentElement!==actions && /فتح الرابط|الرابط|🔗/.test(text))actions.appendChild(a);
+    });
+  }
   function addStoredLink(detail){
-    if(detail.querySelector('.stored-detail-link'))return;
+    if(!detail)return;
+    const actions=detail.querySelector('.actions');
+    if(!actions)return;
+    moveExistingLink(detail);
+    if(actions.querySelector('.stored-detail-link'))return;
     let service=null;try{service=window.__dabbarliServices?.find(x=>String(x.id)===String(currentServiceId))}catch(e){}
     const url=String(service?.link||'').trim();
-    const actions=detail.querySelector('.actions');
-    if(url&&actions)actions.appendChild(makeLink(url));
+    if(url)actions.appendChild(makeLink(url));
   }
   async function addRating(detail){
     if(!currentServiceId||detail.querySelector('.rating-box'))return;
@@ -50,7 +64,7 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     field.innerHTML='<label>رابط الصفحة / الموقع</label><input name="link" type="url" placeholder="https://...">';
     if(details){const detailsField=details.closest('.field');if(detailsField)detailsField.parentNode.insertBefore(field,detailsField);else form.appendChild(field)}else form.appendChild(field);
   }
-  function enhance(){const detail=document.querySelector('.detail');if(detail)addStoredLink(detail);if(detail)addRating(detail);ensureLinkField()}
+  function enhance(){const detail=document.querySelector('.detail');if(detail){moveExistingLink(detail);addStoredLink(detail);addRating(detail)}ensureLinkField()}
   document.addEventListener('click',e=>{const b=e.target.closest('button[onclick*="showDetail"]');if(!b)return;const m=String(b.getAttribute('onclick')||'').match(/showDetail\(['"]([^'"]+)['"]\)/);if(m)currentServiceId=m[1];setTimeout(enhance,50);setTimeout(enhance,300)},true);
   const observer=new MutationObserver(()=>{setTimeout(enhance,20);setTimeout(enhance,150)});observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
   setTimeout(ensureLinkField,300);
