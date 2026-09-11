@@ -3,9 +3,8 @@ window.SUPABASE_URL = "https://rrybfflettigvfgpfbyi.supabase.co";
 window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
 
 (function(){
-  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const css=document.createElement('style');
-  css.textContent=`
+  const style=document.createElement('style');
+  style.textContent=`
     .detail-link{display:flex!important;align-items:center;justify-content:center;box-sizing:border-box;width:100%;min-height:46px;margin:10px 0 0;padding:12px 14px;border-radius:10px;background:#0b8f58;color:#fff!important;font-weight:800;text-decoration:none!important}
     .detail-link:hover{filter:brightness(.95)}
     .rating-box{margin-top:20px;padding:16px;border:1px solid #e7ede9;border-radius:18px;background:#f3faf6;text-align:right}
@@ -15,30 +14,32 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     .rating-choice.selected{color:#e2a400}
     .rating-submit{width:100%;margin-top:5px}
   `;
-  document.head.appendChild(css);
-
+  document.head.appendChild(style);
   let currentServiceId=null;
-  function fp(){let x=localStorage.getItem('dabbarli_rating_fp');if(!x){x=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();localStorage.setItem('dabbarli_rating_fp',x)}return x}
-  function makeUrlButton(url){const a=document.createElement('a');a.className='detail-link stored-detail-link';a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='🔗 فتح الصفحة';return a}
-  function convertTextUrls(detail){
-    const re=/https?:\/\/[^\s<]+/g;
-    const walker=document.createTreeWalker(detail,NodeFilter.SHOW_TEXT);
-    const nodes=[];let n;
-    while(n=walker.nextNode()){
-      if(n.parentElement?.closest('a,button,.actions,.rating-box,.detail-link'))continue;
-      if(re.test(n.nodeValue||''))nodes.push(n);re.lastIndex=0;
-    }
-    nodes.forEach(t=>{
-      const text=t.nodeValue||'',frag=document.createDocumentFragment();let last=0,m;
-      re.lastIndex=0;
-      while((m=re.exec(text))){
-        frag.append(document.createTextNode(text.slice(last,m.index)));
-        const url=m[0].replace(/[),.،]+$/,'');frag.append(makeUrlButton(url));last=m.index+m[0].length;
-      }
-      frag.append(document.createTextNode(text.slice(last)));t.parentNode.replaceChild(frag,t);
-    });
+  const fingerprint=()=>{let x=localStorage.getItem('dabbarli_rating_fp');if(!x){x=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();localStorage.setItem('dabbarli_rating_fp',x)}return x};
+  function makeLink(url){const a=document.createElement('a');a.className='detail-link stored-detail-link';a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='🔗 فتح الصفحة';return a}
+  function replaceUrls(detail){
+    const p=detail.querySelector('.detail > p');
+    if(!p||p.dataset.urlButtonReady)return;
+    const text=p.textContent||'';
+    const match=text.match(/https?:\/\/[^\s<]+/i);
+    if(!match)return;
+    const url=match[0].replace(/[),.،]+$/,'');
+    const before=text.slice(0,match.index).replace(/\s*[:：-]?\s*$/,'').trim();
+    const after=text.slice(match.index+match[0].length).trim();
+    p.textContent='';
+    if(before)p.appendChild(document.createTextNode(before));
+    p.appendChild(makeLink(url));
+    if(after)p.appendChild(document.createTextNode(after));
+    p.dataset.urlButtonReady='1';
   }
-  async function rating(detail){
+  function addStoredLink(detail){
+    if(detail.querySelector('.stored-detail-link'))return;
+    let service=null;try{service=window.__dabbarliServices?.find(x=>String(x.id)===String(currentServiceId))}catch(e){}
+    const url=String(service?.link||'').trim();const actions=detail.querySelector('.actions');
+    if(url&&actions)actions.appendChild(makeLink(url));
+  }
+  async function addRating(detail){
     if(!currentServiceId||detail.querySelector('.rating-box'))return;
     const box=document.createElement('div');box.className='rating-box';
     box.innerHTML='<div class="rating-box-title">قيّم هذه الخدمة</div><div class="rating-choices"><button type="button" class="rating-choice" data-r="1">★</button><button type="button" class="rating-choice" data-r="2">★</button><button type="button" class="rating-choice" data-r="3">★</button><button type="button" class="rating-choice" data-r="4">★</button><button type="button" class="rating-choice" data-r="5">★</button></div><button type="button" class="primary rating-submit" disabled>إرسال التقييم</button><div class="muted rating-status"></div>';
@@ -46,18 +47,11 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     const c=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);let selected=0;
     box.querySelectorAll('.rating-choice').forEach(b=>b.onclick=()=>{selected=Number(b.dataset.r);box.querySelectorAll('.rating-choice').forEach(x=>x.classList.toggle('selected',Number(x.dataset.r)<=selected));box.querySelector('.rating-submit').disabled=false});
     const status=box.querySelector('.rating-status'),submit=box.querySelector('.rating-submit');
-    try{const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId).eq('fingerprint',fp()).limit(1);if(data?.length){status.textContent='لقد قيّمت هذه الخدمة من قبل.';box.querySelectorAll('.rating-choice').forEach(x=>x.disabled=true)}}catch(e){}
+    try{const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId).eq('fingerprint',fingerprint()).limit(1);if(data?.length){status.textContent='لقد قيّمت هذه الخدمة من قبل.';box.querySelectorAll('.rating-choice').forEach(x=>x.disabled=true)}}catch(e){}
     try{const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId);if(data){const avg=data.length?data.reduce((a,x)=>a+Number(x.rating||0),0)/data.length:0;const row=detail.querySelector('.rating-row');if(row)row.innerHTML='<span class="star">★</span><span>'+avg.toFixed(1)+' ('+data.length+')</span>'}}catch(e){}
-    submit.onclick=async()=>{if(!selected)return;submit.disabled=true;status.textContent='جاري إرسال التقييم...';const {error}=await c.from('ratings').insert({service_id:currentServiceId,rating:selected,fingerprint:fp()});if(error){status.textContent=error.code==='23505'?'لقد قيّمت هذه الخدمة من قبل.':'تعذر إرسال التقييم، حاول مرة أخرى.';return}status.textContent='شكرًا لك، تم تسجيل تقييمك.';box.querySelectorAll('.rating-choice').forEach(x=>x.disabled=true);const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId);if(data){const avg=data.reduce((a,x)=>a+Number(x.rating||0),0)/data.length;const row=detail.querySelector('.rating-row');if(row)row.innerHTML='<span class="star">★</span><span>'+avg.toFixed(1)+' ('+data.length+')</span>'}};
+    submit.onclick=async()=>{if(!selected)return;submit.disabled=true;status.textContent='جاري إرسال التقييم...';const {error}=await c.from('ratings').insert({service_id:currentServiceId,rating:selected,fingerprint:fingerprint()});if(error){status.textContent=error.code==='23505'?'لقد قيّمت هذه الخدمة من قبل.':'تعذر إرسال التقييم، حاول مرة أخرى.';return}status.textContent='شكرًا لك، تم تسجيل تقييمك.';box.querySelectorAll('.rating-choice').forEach(x=>x.disabled=true);const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId);if(data){const avg=data.reduce((a,x)=>a+Number(x.rating||0),0)/data.length;const row=detail.querySelector('.rating-row');if(row)row.innerHTML='<span class="star">★</span><span>'+avg.toFixed(1)+' ('+data.length+')</span>'}};
   }
-  function enhance(){
-    const detail=document.querySelector('.detail');if(!detail)return;
-    convertTextUrls(detail);
-    if(currentServiceId){let service;try{service=window.__dabbarliServices?.find(x=>String(x.id)===String(currentServiceId))}catch(e){}
-      const url=String(service?.link||'').trim();const actions=detail.querySelector('.actions');if(url&&actions&&!actions.querySelector('.stored-detail-link'))actions.appendChild(makeUrlButton(url));
-    }
-    rating(detail);
-  }
-  document.addEventListener('click',e=>{const b=e.target.closest('button[onclick*="showDetail"]');if(!b)return;const m=String(b.getAttribute('onclick')||'').match(/showDetail\(['"]([^'"]+)['"]\)/);if(m)currentServiceId=m[1];setTimeout(enhance,0)},true);
-  const ob=new MutationObserver(()=>setTimeout(enhance,0));ob.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
+  function enhance(){const detail=document.querySelector('.detail');if(!detail)return;replaceUrls(detail);addStoredLink(detail);addRating(detail)}
+  document.addEventListener('click',e=>{const b=e.target.closest('button[onclick*="showDetail"]');if(!b)return;const m=String(b.getAttribute('onclick')||'').match(/showDetail\(['"]([^'"]+)['"]\)/);if(m)currentServiceId=m[1];setTimeout(enhance,50);setTimeout(enhance,300)},true);
+  const observer=new MutationObserver(()=>{setTimeout(enhance,20);setTimeout(enhance,150)});observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
 })();
