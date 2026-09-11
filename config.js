@@ -161,6 +161,17 @@ document.addEventListener('submit', async function (event) {
     }
     if (html) { html += escHtml(text.slice(last)); p.innerHTML = html; }
   };
+  const refreshRating = async (detail, ratingClient) => {
+    if (!currentServiceId) return;
+    try {
+      const {data, error} = await ratingClient.from('ratings').select('rating').eq('service_id', currentServiceId);
+      if (error || !data) return;
+      const count = data.length;
+      const avg = count ? data.reduce((sum,row)=>sum+Number(row.rating||0),0)/count : 0;
+      const row = detail.querySelector('.detail-current-rating');
+      if (row) row.innerHTML = `<span class="star">★</span><span>${avg.toFixed(1)} (${count})</span>`;
+    } catch (error) { console.error('Rating refresh error:', error); }
+  };
   const ensureRating = async (detail) => {
     if (!currentServiceId || detail.querySelector('.rating-box')) return;
     const box = document.createElement('div');
@@ -176,41 +187,31 @@ document.addEventListener('submit', async function (event) {
     }));
     const submit = box.querySelector('.rating-submit');
     const status = box.querySelector('.rating-status');
+    const ratingClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
     try {
-      const ratingClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
       const {data: mine} = await ratingClient.from('ratings').select('rating').eq('service_id', currentServiceId).eq('fingerprint', getFingerprint()).limit(1);
-      if (mine?.length) status.textContent = 'لقد قيّمت هذه الخدمة من قبل.';
-      submit.addEventListener('click', async () => {
-        if (!selected) return;
-        submit.disabled = true;
-        status.textContent = 'جاري إرسال التقييم...';
-        const {error} = await ratingClient.from('ratings').insert({service_id:currentServiceId,rating:selected,fingerprint:getFingerprint()});
-        if (error) {
-          status.textContent = error.code === '23505' ? 'لقد قيّمت هذه الخدمة من قبل.' : 'تعذر إرسال التقييم، حاول مرة أخرى.';
-          submit.disabled = false;
-          return;
-        }
-        status.textContent = 'شكرًا لك، تم تسجيل تقييمك.';
-        box.querySelectorAll('.rating-choice').forEach(x => x.disabled = true);
-        await refreshRating(detail, ratingClient);
-      });
-    } catch (error) { console.error('Rating setup error:', error); }
-  };
-  const refreshRating = async (detail, ratingClient) => {
-    try {
-      const {data, error} = await ratingClient.from('ratings').select('rating').eq('service_id', currentServiceId);
-      if (error || !data) return;
-      const count = data.length;
-      const avg = count ? data.reduce((sum,row)=>sum+Number(row.rating||0),0)/count : 0;
-      const row = detail.querySelector('.detail-current-rating');
-      if (row) row.innerHTML = `<span class="star">★</span><span>${avg.toFixed(1)} (${count})</span>`;
-    } catch (error) { console.error('Rating refresh error:', error); }
+      if (mine?.length) { status.textContent = 'لقد قيّمت هذه الخدمة من قبل.'; box.querySelectorAll('.rating-choice').forEach(x => x.disabled = true); }
+    } catch (error) { console.error('Rating check error:', error); }
+    submit.addEventListener('click', async () => {
+      if (!selected) return;
+      submit.disabled = true;
+      status.textContent = 'جاري إرسال التقييم...';
+      const {error} = await ratingClient.from('ratings').insert({service_id:currentServiceId,rating:selected,fingerprint:getFingerprint()});
+      if (error) {
+        status.textContent = error.code === '23505' ? 'لقد قيّمت هذه الخدمة من قبل.' : 'تعذر إرسال التقييم، حاول مرة أخرى.';
+        submit.disabled = error.code === '23505';
+        return;
+      }
+      status.textContent = 'شكرًا لك، تم تسجيل تقييمك.';
+      box.querySelectorAll('.rating-choice').forEach(x => x.disabled = true);
+      await refreshRating(detail, ratingClient);
+    });
+    await refreshRating(detail, ratingClient);
   };
   const enhance = () => {
     const detail = document.querySelector('.detail');
     if (!detail) return;
-    const img = detail.querySelector('.detail-img');
-    setupImage(img);
+    setupImage(detail.querySelector('.detail-img'));
     setupDetailsText(detail);
     if (!detail.querySelector('.detail-current-rating')) {
       const rows = detail.querySelectorAll('.rating-row');
@@ -219,11 +220,13 @@ document.addEventListener('submit', async function (event) {
     }
     ensureRating(detail);
   };
+  document.addEventListener('click', event => {
+    const button = event.target.closest('button[onclick*="showDetail"]');
+    if (!button) return;
+    const match = String(button.getAttribute('onclick') || '').match(/showDetail\(['"]([^'"]+)['"]\)/);
+    if (match) currentServiceId = match[1];
+  }, true);
   const observer = new MutationObserver(enhance);
   observer.observe(document.getElementById('content') || document.body, {childList:true,subtree:true});
   window.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelector('.image-lightbox')?.remove(); });
-  const originalShowDetail = window.showDetail;
-  if (typeof originalShowDetail === 'function') {
-    window.showDetail = function(id){ currentServiceId = id; originalShowDetail(id); setTimeout(enhance, 0); };
-  }
 })();
