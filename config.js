@@ -124,11 +124,29 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
   function enhanceCategoryDetails(){
     const h=content.querySelector('.page-card .section-head h2');
     if(!h)return;
-    const title=(h.textContent||'').trim();
-    if((title==='النقل والمركبات'||title==='النقل والآليات')&&!content.querySelector('.category-detail-list'))renderTransportDetails();
+    const title=(h.textContent||'').trim().replace(/^[^\u0600-\u06FF]+/,'').trim();
+    if((title.includes('النقل والمركبات')||title.includes('النقل والآليات'))&&!content.querySelector('.category-detail-list'))renderTransportDetails();
   }
   function enhance(){const detail=document.querySelector('.detail');if(detail){moveExistingLink(detail);addStoredLink(detail);enableImageZoom(detail);addRating(detail)}ensureLinkField();enhanceCategoryDetails()}
   document.addEventListener('click',e=>{const b=e.target.closest('button[onclick*="showDetail"]');if(!b)return;const m=String(b.getAttribute('onclick')||'').match(/showDetail\(['"]([^'"]+)['"]\)/);if(m)currentServiceId=m[1];setTimeout(enhance,50);setTimeout(enhance,300)},true);
   const observer=new MutationObserver(()=>{setTimeout(enhance,20);setTimeout(enhance,150)});observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
+  const wrapTransportCategory=()=>{
+    if(typeof window.category!=='function'){setTimeout(wrapTransportCategory,100);return}
+    if(window.category.__dabbarliTransportWrapped)return;
+    const original=window.category;
+    window.category=function(type){
+      const t=String(type||'').trim();
+      if(t.includes('النقل والمركبات')||t.includes('النقل والآليات')){
+        window.__dabbarliServices=services.length?services:(window.__dabbarliServices||[]);
+        renderTransportDetails();
+        return;
+      }
+      return original.apply(this,arguments);
+    };
+    window.category.__dabbarliTransportWrapped=true;
+  };
+  setTimeout(wrapTransportCategory,50);
+  setTimeout(wrapTransportCategory,300);
+  setTimeout(wrapTransportCategory,1000);
   setTimeout(ensureLinkField,300);
 })();
