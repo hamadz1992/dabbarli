@@ -114,6 +114,33 @@ document.addEventListener('submit', async function (event) {
   style.textContent = `
     .service-img{object-fit:cover!important;object-position:center!important;background:#eee}
     .detail-img{object-fit:cover!important;object-position:center!important;background:#eee}
+    .detail-img{cursor:zoom-in}
+    .image-lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}
+    .image-lightbox img{max-width:96vw;max-height:92vh;width:auto;height:auto;object-fit:contain;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+    .image-lightbox .image-close{position:absolute;top:16px;right:16px;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.94);color:#122019;font-size:30px;line-height:1;cursor:pointer}
   `;
   document.head.appendChild(style);
 })();
+
+// عند الضغط على صورة الخدمة داخل "عرض المعلومات"، افتحها بالحجم الكامل.
+document.addEventListener('click', function(event){
+  const image = event.target.closest('.detail-img');
+  if (!image) return;
+  event.preventDefault();
+  let box = document.querySelector('.image-lightbox');
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'image-lightbox';
+    box.innerHTML = '<button class="image-close" aria-label="إغلاق">×</button><img alt="">';
+    document.body.appendChild(box);
+    box.addEventListener('click', function(e){
+      if (e.target === box || e.target.classList.contains('image-close')) box.remove();
+    });
+  }
+  box.querySelector('img').src = image.currentSrc || image.src;
+  box.querySelector('img').alt = image.alt || 'صورة الخدمة';
+});
+
+document.addEventListener('keydown', function(event){
+  if (event.key === 'Escape') document.querySelector('.image-lightbox')?.remove();
+});
