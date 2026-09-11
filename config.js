@@ -25,11 +25,11 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     .category-detail-item{width:100%;display:flex;direction:rtl;align-items:center;gap:16px;padding:12px 14px;border:0;border-radius:20px;background:#f7faf8;box-shadow:0 2px 10px rgba(20,60,45,.06);cursor:pointer;text-align:right;color:inherit}
     .category-detail-item:active{transform:scale(.99)}
     .category-detail-thumb{width:72px;height:72px;flex:0 0 72px;border-radius:14px;object-fit:cover;background:#e8f2ed}
-    .category-detail-placeholder{display:flex;align-items:center;justify-content:center;font-size:30px}
+    .category-detail-design{display:flex;align-items:center;justify-content:center;font-size:34px;background:linear-gradient(145deg,#eaf8f0,#d7eee2);border:1px solid #d4e9dd;box-sizing:border-box}
     .category-detail-name{flex:1;font-size:18px;font-weight:800}
     .category-detail-arrow{font-size:30px;color:#888;line-height:1}
     .category-detail-count{display:block;margin-top:4px;font-size:12px;font-weight:500;color:#7a857f}
-    @media(max-width:520px){.detail .actions a{font-size:11px;padding:9px 3px}.category-detail-item{gap:12px;padding:10px 12px}.category-detail-thumb{width:70px;height:70px;flex-basis:70px}.category-detail-name{font-size:16px}.category-detail-arrow{font-size:26px}}
+    @media(max-width:520px){.detail .actions a{font-size:11px;padding:9px 3px}.category-detail-item{gap:12px;padding:10px 12px}.category-detail-thumb{width:70px;height:70px;flex-basis:70px}.category-detail-name{font-size:16px}.category-detail-arrow{font-size:26px}.category-detail-design{font-size:32px}}
   `;
   document.head.appendChild(style);
   let currentServiceId=null;
@@ -96,10 +96,14 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
   }
 
   const transportDetails=['سيارات أجرة','سيارات نقل','شاحنات نقل','شاحنات كبيرة','شاحنات الماء','شاحنات الغاز','جرارات','جرافات','حفارات','رافعات','شاحنات تبريد','نقل البضائع','نقل الأثاث','سائق خاص','سفريات','ميكانيكي','كهرباء سيارات','تصليح سيارات','تصليح شاحنات','غسيل سيارات','زيوت','إطارات','قطع غيار','بيع سيارات','كراء سيارات','دراجات نارية','إصلاح دراجات'];
+  const transportDesigns={
+    'سيارات أجرة':'🚕','سيارات نقل':'🚐','شاحنات نقل':'🚚','شاحنات كبيرة':'🚛','شاحنات الماء':'💧','شاحنات الغاز':'🔥','جرارات':'🚜','جرافات':'🏗️','حفارات':'🚧','رافعات':'🏗️','شاحنات تبريد':'❄️','نقل البضائع':'📦','نقل الأثاث':'🛋️','سائق خاص':'👨‍✈️','سفريات':'🚌','ميكانيكي':'🔧','كهرباء سيارات':'⚡','تصليح سيارات':'🛠️','تصليح شاحنات':'🔩','غسيل سيارات':'🧽','زيوت':'🛢️','إطارات':'🛞','قطع غيار':'⚙️','بيع سيارات':'🚘','كراء سيارات':'🔑','دراجات نارية':'🏍️','إصلاح دراجات':'🔩'
+  };
   function findTransportService(name){
     const list=window.__dabbarliServices||[];
     return list.find(s=>String(s.specialty||'').trim()===name||String(s.name||'').trim()===name);
   }
+  function transportDesignFor(name){return transportDesigns[name]||'🚚'}
   function showTransportSpecialty(name){
     const list=(window.__dabbarliServices||[]).filter(s=>String(s.specialty||'').trim()===name||String(s.name||'').trim()===name);
     const html=list.length?list.map(s=>card(s)).join(''):'<div class="empty">لا توجد خدمات منشورة في هذا التخصص بعد.</div>';
@@ -114,15 +118,14 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
       const s=findTransportService(name);
       const src=s?.image_url||s?.img||fallbackImg;
       const count=list.filter(x=>String(x.specialty||'').trim()===name||String(x.name||'').trim()===name).length;
-      const thumb=src?'<img class="category-detail-thumb" src="'+esc(src)+'" alt="">':'<div class="category-detail-thumb category-detail-placeholder">🚚</div>';
+      const thumb='<div class="category-detail-thumb category-detail-design" aria-hidden="true">'+transportDesignFor(name)+'</div>';
       return '<button type="button" class="category-detail-item" data-transport="'+esc(name)+'">'+thumb+'<span class="category-detail-name">'+esc(name)+(count?'<small class="category-detail-count">'+count+' خدمة</small>':'')+'</span><span class="category-detail-arrow">‹</span></button>';
     }).join('');
-    content.innerHTML='<div class="page-card"><div class="section-head"><h2>النقل والمركبات</h2><button class="see-all" id="transportHome">‹ الرئيسية</button></div><div class="category-detail-list">'+items+'</div>';
+    content.innerHTML='<div class="page-card"><div class="section-head"><h2>النقل والمركبات</h2><button class="see-all" id="transportHome">‹ الرئيسية</button></div><div class="category-detail-list">'+items+'</div></div>';
     document.getElementById('transportHome')?.addEventListener('click',()=>home());
     content.querySelectorAll('[data-transport]').forEach(b=>b.addEventListener('click',()=>showTransportSpecialty(b.dataset.transport)));
   }
 
-  // Expose these handlers to the main page script.
   window.renderTransportDetails=renderTransportDetails;
   window.showTransportSpecialty=showTransportSpecialty;
 
