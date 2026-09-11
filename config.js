@@ -13,6 +13,8 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     .rating-choice{font-size:31px;color:#c9cec9;cursor:pointer;padding:0 2px;border:0;background:transparent}
     .rating-choice.selected{color:#e2a400}
     .rating-submit{width:100%;margin-top:5px}
+    .link-field{padding:12px;border:1px solid #dce7e1;border-radius:14px;background:#f7fbf9}
+    .link-field label{font-weight:800}
   `;
   document.head.appendChild(style);
   let currentServiceId=null;
@@ -37,7 +39,16 @@ window.SUPABASE_ANON_KEY = "sb_publishable_JFoAUuoK0X-eGsQ8xNNnCA_h1Y865Qm";
     try{const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId);if(data){const avg=data.length?data.reduce((a,x)=>a+Number(x.rating||0),0)/data.length:0;const row=detail.querySelector('.rating-row');if(row)row.innerHTML='<span class="star">★</span><span>'+avg.toFixed(1)+' ('+data.length+')</span>'}}catch(e){}
     submit.onclick=async()=>{if(!selected)return;submit.disabled=true;status.textContent='جاري إرسال التقييم...';const {error}=await c.from('ratings').insert({service_id:currentServiceId,rating:selected,fingerprint:fingerprint()});if(error){status.textContent=error.code==='23505'?'لقد قيّمت هذه الخدمة من قبل.':'تعذر إرسال التقييم، حاول مرة أخرى.';return}status.textContent='شكرًا لك، تم تسجيل تقييمك.';box.querySelectorAll('.rating-choice').forEach(x=>x.disabled=true);const {data}=await c.from('ratings').select('rating').eq('service_id',currentServiceId);if(data){const avg=data.reduce((a,x)=>a+Number(x.rating||0),0)/data.length;const row=detail.querySelector('.rating-row');if(row)row.innerHTML='<span class="star">★</span><span>'+avg.toFixed(1)+' ('+data.length+')</span>'}};
   }
-  function enhance(){const detail=document.querySelector('.detail');if(!detail)return;addStoredLink(detail);addRating(detail)}
+  function ensureLinkField(){
+    const form=document.getElementById('addForm');
+    if(!form||form.querySelector('[name="link"]'))return;
+    const details=form.querySelector('[name="details"]');
+    const field=document.createElement('div');field.className='field link-field';
+    field.innerHTML='<label>رابط الصفحة / الموقع</label><input name="link" type="url" placeholder="https://...">';
+    if(details){const detailsField=details.closest('.field');if(detailsField)detailsField.parentNode.insertBefore(field,detailsField);else form.appendChild(field)}else form.appendChild(field);
+  }
+  function enhance(){const detail=document.querySelector('.detail');if(detail)addStoredLink(detail);if(detail)addRating(detail);ensureLinkField()}
   document.addEventListener('click',e=>{const b=e.target.closest('button[onclick*="showDetail"]');if(!b)return;const m=String(b.getAttribute('onclick')||'').match(/showDetail\(['"]([^'"]+)['"]\)/);if(m)currentServiceId=m[1];setTimeout(enhance,50);setTimeout(enhance,300)},true);
   const observer=new MutationObserver(()=>{setTimeout(enhance,20);setTimeout(enhance,150)});observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
+  setTimeout(ensureLinkField,300);
 })();
