@@ -115,11 +115,12 @@ document.addEventListener('submit', async function (event) {
     .image-lightbox .close-image{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:30px;line-height:1}
     .rating-box{margin-top:20px;padding:16px;border:1px solid #e7ede9;border-radius:18px;background:#f3faf6;text-align:right}
     .rating-box-title{font-weight:800;font-size:16px;margin-bottom:8px}
-    .rating-choices{display:flex;direction:ltr;gap:5px;margin:7px 0 10px}
+    .rating-choices{display:flex;direction:ltr;justify-content:flex-start;gap:5px;margin:7px 0 10px}
     .rating-choice{font-size:31px;color:#c9cec9;cursor:pointer;padding:0 2px;border:0;background:transparent}
     .rating-choice.selected{color:#e2a400}
     .rating-submit{width:100%;margin-top:5px}
-    .detail-link{display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;margin-top:10px;padding:12px 14px;border-radius:10px;background:#7440d6;color:#fff!important;font-weight:700;text-decoration:none!important}
+    .detail-link{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:100%;margin-top:10px;padding:12px 14px;border-radius:10px;background:#7440d6;color:#fff!important;font-weight:700;text-decoration:none!important}
+    .detail-link:hover{filter:brightness(.96)}
   `;
   document.head.appendChild(style);
 })();
@@ -160,6 +161,22 @@ document.addEventListener('submit', async function (event) {
       last = match.index + match[0].length;
     }
     if (html) { html += escHtml(text.slice(last)); p.innerHTML = html; }
+  };
+  const addStoredLink = (detail) => {
+    if (detail.querySelector('.stored-detail-link')) return;
+    let service = null;
+    try { if (typeof services !== 'undefined' && currentServiceId) service = services.find(x => String(x.id) === String(currentServiceId)); } catch(e) {}
+    const url = String(service?.link || '').trim();
+    if (!url) return;
+    const actions = detail.querySelector('.actions');
+    if (!actions) return;
+    const a = document.createElement('a');
+    a.className = 'detail-link stored-detail-link';
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = '🔗 الصفحة / الرابط';
+    actions.appendChild(a);
   };
   const refreshRating = async (detail, ratingClient) => {
     if (!currentServiceId) return;
@@ -218,12 +235,20 @@ document.addEventListener('submit', async function (event) {
       const row = rows[rows.length - 1];
       if (row) row.classList.add('detail-current-rating');
     }
+    addStoredLink(detail);
     ensureRating(detail);
   };
   const wrapShowDetail = () => {
     if (typeof window.showDetail !== 'function' || window.showDetail.__dabbarliWrapped) return;
     const original = window.showDetail;
-    const wrapped = function(id){ currentServiceId = String(id); const result = original.apply(this, arguments); setTimeout(enhance, 0); setTimeout(enhance, 120); return result; };
+    const wrapped = function(id){
+      currentServiceId = String(id);
+      const result = original.apply(this, arguments);
+      setTimeout(enhance, 0);
+      setTimeout(enhance, 100);
+      setTimeout(enhance, 300);
+      return result;
+    };
     wrapped.__dabbarliWrapped = true;
     window.showDetail = wrapped;
   };
@@ -237,6 +262,7 @@ document.addEventListener('submit', async function (event) {
     const match = String(button.getAttribute('onclick') || '').match(/showDetail\(['"]([^'"]+)['"]\)/);
     if (match) currentServiceId = match[1];
     setTimeout(enhance, 0);
+    setTimeout(enhance, 100);
   }, true);
   const observer = new MutationObserver(enhance);
   observer.observe(document.getElementById('content') || document.body, {childList:true,subtree:true});
