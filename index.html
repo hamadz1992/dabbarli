@@ -4,165 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>دبّرلي — كل ما تحتاجه</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<link rel="stylesheet" href="style.css">
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="topbar">
-  <button class="menu-btn" id="menuBtn" aria-label="القائمة">☰</button>
-  <div class="brand">
-    <div class="logo">✓</div>
-    <div class="brand-text"><strong>دبّرلي</strong><small>كل ما تحتاجه ... دبّرلي</small></div>
-  </div>
-</header>
-
-<main>
-  <section class="hero">
-    <div class="hero-copy-left">من الجزائر<br>لخدمات أفضل</div>
-    <div class="hero-copy-right">
-      <h1>دبّرلي ... حياتك أسهل</h1>
-      <p>خدمات موثوقة، من ناس تثق فيهم.</p>
-    </div>
-    <div class="hero-search">
-      <input id="heroSearch" placeholder="ماذا تبحث عن؟" autocomplete="off" aria-label="ماذا تبحث عن؟">
-      <button id="heroSearchBtn" aria-label="بحث">⌕</button>
-    </div>
-  </section>
-  <section id="content"></section>
-</main>
-
-<nav class="bottom-nav">
-  <button data-page="home" class="active"><span style="font-size:31px;line-height:1">⌂</span><span>الرئيسية</span></button>
-  <button data-page="search"><span>⌕</span><span>البحث</span></button>
-  <button data-page="add" class="add-btn">＋<span>أضف خدمتك</span></button>
-  <button data-page="news"><span>▣</span><span>الأخبار</span></button>
-  <button data-page="contact"><span>☎</span><span>اتصل بنا</span></button>
-</nav>
-
-<div class="overlay" id="overlay"></div>
-<aside class="drawer" id="drawer">
-  <button class="close" id="closeBtn" aria-label="إغلاق">×</button>
-  <div class="drawer-brand">
-    <h2>دبّرلي</h2>
-  </div>
-  <nav class="drawer-nav" aria-label="القائمة">
-    <button data-page="about"><span class="drawer-icon about-icon">ⓘ</span><span>معلومات عنا</span></button>
-    <button data-page="contact"><span class="drawer-icon contact-icon">☎</span><span>اتصل بنا</span></button>
-    <button id="shareBtn" type="button"><span class="drawer-icon share-icon">↗</span><span>مشاركة التطبيق</span></button>
-  </nav>
-</aside>
-<div class="toast" id="toast"></div>
-
+<header class="topbar"><button class="menu-btn" id="menuBtn">☰</button><div class="brand"><div class="logo">✓</div><div class="brand-text"><strong>دبّرلي</strong><small>كل ما تحتاجه ... دبّرلي</small></div></div></header>
+<main><section class="hero"><div class="hero-copy-left">من الجزائر<br>لخدمات أفضل</div><div class="hero-copy-right"><h1>دبّرلي ... حياتك أسهل</h1><p>خدمات موثوقة، من ناس تثق فيهم.</p></div><div class="hero-search"><input id="heroSearch" placeholder="ماذا تبحث عن؟"><button id="heroSearchBtn">⌕</button></div></section><section id="content"></section></main>
+<nav class="bottom-nav"><button data-page="home" class="active">⌂<span>الرئيسية</span></button><button data-page="search">⌕<span>البحث</span></button><button data-page="add" class="add-btn">＋<span>أضف خدمتك</span></button><button data-page="news">▣<span>الأخبار</span></button><button data-page="contact">☎<span>اتصل بنا</span></button></nav>
+<div class="overlay" id="overlay"></div><aside class="drawer" id="drawer"><button class="close" id="closeBtn">×</button><div class="drawer-brand"><h2>دبّرلي</h2></div><nav class="drawer-nav"><button data-page="about">ⓘ معلومات عنا</button><button data-page="contact">☎ اتصل بنا</button><button id="shareBtn">↗ مشاركة التطبيق</button></nav></aside><div class="toast" id="toast"></div>
 <script>
-const content=document.getElementById('content');
-const drawer=document.getElementById('drawer');
-const overlay=document.getElementById('overlay');
-let client=null, services=[];
-try{ if(window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY); }catch(e){}
-const fallback=[
- {id:'demo-1',name:'كهربائي منازل',category:'خدمات منزلية',specialty:'كهربائي منازل',rating:4.8,area:'الجزائر العاصمة',phone:'0550000001',whatsapp:'0550000001',details:'تركيب وصيانة التمديدات الكهربائية المنزلية، تشخيص الأعطال، وتركيب الإنارة.',img:'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=900&q=85'},
- {id:'demo-2',name:'تنظيف منازل',category:'خدمات منزلية',specialty:'تنظيف منازل',rating:4.9,area:'وهران',phone:'0550000002',whatsapp:'0550000002',details:'تنظيف شامل للمنازل والشقق، تلميع الزجاج، وتنظيف ما بعد الأشغال.',img:'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=900&q=85'},
- {id:'demo-3',name:'تصليح المكيفات',category:'خدمات منزلية',specialty:'تصليح المكيفات',rating:4.7,area:'قسنطينة',phone:'0550000003',whatsapp:'0550000003',details:'تركيب وصيانة وتعبئة غاز المكيفات لجميع الأنواع والماركات.',img:'https://images.unsplash.com/photo-1631545806609-2c5f6f5a8d2b?auto=format&fit=crop&w=900&q=85'},
- {id:'demo-4',name:'أعمال الطلاء والديكور',category:'خدمات منزلية',specialty:'أعمال الطلاء والديكور',rating:4.8,area:'سطيف',phone:'0550000004',whatsapp:'0550000004',details:'دهان داخلي وخارجي، ديكورات الجبس، وتشطيبات نهائية بجودة عالية.',img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=900&q=85'}
-];
-const catData=[
- ['tool','خدمات منزلية','#1688a3'],['car','النقل والمركبات','#f4b400'],['home','العقارات','#7846d8'],['heart','الصحة','#e92f3a'],['leaf','الزراعة والحدائق','#20a84a'],['laptop','التكنولوجيا','#1268c9'],['book','الدروس والتعليم','#ef791c'],['flower','الجمال والعناية','#ef5d8a'],['more','خدمات أخرى','#7440d6']
-];
-function icon(type,color){const p={tool:`<path d="M21 3a6 6 0 0 0-7.5 7.4L4 19.9a2 2 0 1 0 2.8 2.8l9.5-9.5A6 6 0 0 0 21 3Z"/><path d="m14.5 9.5 3 3"/>`,car:`<path d="M5 16h14l-1.2-5a2 2 0 0 0-2-1.5H8.2a2 2 0 0 0-2 1.5L5 16Z"/><path d="M4 16v4m16-4v4M7 20h10"/><circle cx="7" cy="16.5" r="1"/><circle cx="17" cy="16.5" r="1"/>`,home:`<path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/>`,heart:`<path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.6A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11Z"/><path d="M8 11h2l1-2 2 5 1-3h2"/>`,leaf:`<path d="M20 4C10 4 5 9 5 16c0 2 1 4 3 5"/><path d="M5 20c2-6 6-9 13-11"/><path d="M9 20v-4m0 0H6m3 0 3-3m-3 3v3"/>`,laptop:`<rect x="4" y="5" width="16" height="12" rx="1"/><path d="M2 20h20"/>`,book:`<path d="M4 5c3-1 5 0 8 2 3-2 5-3 8-2v14c-3-1-5 0-8 2-3-2-5-3-8-2V5Z"/><path d="M12 7v14"/>`,flower:`<path d="M12 21c-1-4-1-7 0-10"/><path d="M12 13c-4 1-8-1-8-5 4-1 7 1 8 5Zm0 0c1-4 4-6 8-5 0 4-4 6-8 5Zm0-3c-3-2-4-6-1-8 3 2 4 5 1 8Z"/>`,more:`<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>`};return `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${p[type]}</svg>`}
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function hexA(hex,a){const h=hex.replace('#','');const r=parseInt(h.substring(0,2),16),g=parseInt(h.substring(2,4),16),b=parseInt(h.substring(4,6),16);return `rgba(${r},${g},${b},${a})`}
-function toast(t){const x=document.getElementById('toast');x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),2200)}
-async function loadServices(){
- if(!client){services=fallback;return}
- try{const {data,error}=await client.from('services').select('*').eq('status','approved').order('created_at',{ascending:false});if(error||!data?.length){services=fallback;return}services=data.map(s=>({...s,img:s.image_url||fallback[0].img,rating:Number(s.rating||0)}));}catch(e){services=fallback}
-}
-function card(s){return `<article class="service"><button class="fav" onclick="toggleFav(this)" aria-label="مفضلة">♡</button><img class="service-img" src="${esc(s.img||s.image_url||fallback[0].img)}" alt="${esc(s.name||s.specialty)}"><div class="service-body"><h3>${esc(s.name||s.specialty||'خدمة')}</h3><div class="rating-row"><span>${Number(s.rating||0).toFixed(1)}</span><span class="star">★</span></div><button class="primary" style="width:100%;margin-top:8px" onclick="showDetail('${esc(s.id)}')">عرض المعلومات</button></div></article>`}
-function categoryButton(c){return `<button class="cat" onclick="category('${esc(c[1])}')"><span class="cat-icon" style="background:${hexA(c[2],.13)}">${icon(c[0],c[2])}</span><b>${c[1]}</b></button>`}
-async function home(){
- await loadServices();
- content.innerHTML=`<div class="home-wrap">
-  <section class="section"><div class="section-head"><div class="section-title-wrap"><h2>وش تحتاج ؟</h2><p>اختر من بين مئات الخدمات المتوفرة</p></div><button type="button" class="see-all" onclick="showAllCategories()"><span class="chev">‹</span> عرض الكل</button></div><div class="categories">${catData.map(categoryButton).join('')}</div></section>
-  <section class="section" style="margin-top:42px"><div class="section-head"><div class="section-title-wrap"><h2><span class="arrow-up">↗</span> الخدمات الأكثر طلبًا</h2><p>اكتشف أكثر الخدمات طلبًا من المستخدمين</p></div><button type="button" class="see-all" onclick="showAllServices()"><span class="chev">‹</span> عرض الكل</button></div><div class="services">${services.slice(0,4).map(card).join('')}</div></section>
- </div>`;
- setActive('home');
-}
-function showAllCategories(){
-  content.innerHTML=`<div class="page-card"><div class="section-head"><div class="section-title-wrap"><h2>كل التصنيفات</h2><p>اختر التصنيف الذي تبحث عنه</p></div><button type="button" class="see-all" onclick="home()"><span class="chev">‹</span> الرئيسية</button></div><div class="categories">${catData.map(categoryButton).join('')}</div></div>`;
-  setActive('home');
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-function showAllServices(){
-  content.innerHTML=`<div class="page-card"><div class="section-head"><div class="section-title-wrap"><h2>الخدمات الأكثر طلبًا</h2><p>اكتشف جميع الخدمات المتوفرة</p></div><button type="button" class="see-all" onclick="home()"><span class="chev">‹</span> الرئيسية</button></div><div class="services">${services.map(card).join('')}</div></div>`;
-  setActive('home');
-  window.scrollTo({top:0,behavior:'smooth'});
-}
+const content=document.getElementById('content'),drawer=document.getElementById('drawer'),overlay=document.getElementById('overlay');let client=null,services=[];try{client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY)}catch(e){}
+const fallback=[{id:'demo-1',name:'كهربائي منازل',category:'خدمات منزلية',specialty:'كهربائي منازل',rating:4.8,area:'الجزائر العاصمة',phone:'0550000001',whatsapp:'0550000001',img:'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=900&q=85'}];
+const catData=[['tool','خدمات منزلية','#1688a3'],['car','النقل والمركبات','#f4b400'],['home','العقارات','#7846d8'],['heart','الصحة','#e92f3a'],['leaf','الزراعة والحدائق','#20a84a'],['laptop','التكنولوجيا','#1268c9'],['book','الدروس والتعليم','#ef791c'],['flower','الجمال والعناية','#ef5d8a'],['more','خدمات أخرى','#7440d6']];
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}function toast(t){const x=document.getElementById('toast');x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),2500)}
+async function loadServices(){if(!client){services=fallback;return}try{const {data,error}=await client.from('services').select('*').eq('status','approved').order('created_at',{ascending:false});services=error||!data?.length?fallback:data.map(s=>({...s,img:s.image_url||fallback[0].img,rating:Number(s.rating||0)}))}catch(e){services=fallback}}
+function card(s){return `<article class="service"><button class="fav" onclick="toggleFav(this)">♡</button><img class="service-img" src="${esc(s.image_url||s.img||fallback[0].img)}" alt="${esc(s.name||s.specialty)}"><div class="service-body"><h3>${esc(s.name||s.specialty||'خدمة')}</h3><div class="rating-row"><span>${Number(s.rating||0).toFixed(1)}</span><span class="star">★</span></div><button class="primary" style="width:100%;margin-top:8px" onclick="showDetail('${esc(s.id)}')">عرض المعلومات</button></div></article>`}
+async function home(){await loadServices();content.innerHTML=`<div class="home-wrap"><section class="section"><div class="section-head"><div class="section-title-wrap"><h2>وش تحتاج ؟</h2><p>اختر من بين مئات الخدمات المتوفرة</p></div><button class="see-all" onclick="showAllCategories()">‹ عرض الكل</button></div><div class="categories">${catData.map(c=>`<button class="cat" onclick="category('${esc(c[1])}')"><b>${c[1]}</b></button>`).join('')}</div></section><section class="section" style="margin-top:42px"><div class="section-head"><div class="section-title-wrap"><h2>↗ الخدمات الأكثر طلبًا</h2><p>اكتشف أكثر الخدمات طلبًا من المستخدمين</p></div><button class="see-all" onclick="showAllServices()">‹ عرض الكل</button></div><div class="services">${services.slice(0,4).map(card).join('')}</div></section></div>`;setActive('home')}
+function showAllCategories(){content.innerHTML=`<div class="page-card"><div class="section-head"><h2>كل التصنيفات</h2><button class="see-all" onclick="home()">‹ الرئيسية</button></div><div class="categories">${catData.map(c=>`<button class="cat" onclick="category('${esc(c[1])}')"><b>${c[1]}</b></button>`).join('')}</div></div>`}
+function showAllServices(){content.innerHTML=`<div class="page-card"><div class="section-head"><h2>الخدمات الأكثر طلبًا</h2><button class="see-all" onclick="home()">‹ الرئيسية</button></div><div class="services">${services.map(card).join('')}</div></div>`}
 function category(type){const list=services.filter(s=>s.category===type||s.specialty===type||s.name===type);content.innerHTML=`<div class="page-card"><div class="section-head"><h2>${esc(type)}</h2><button class="see-all" onclick="home()">‹ الرئيسية</button></div><div class="services">${list.length?list.map(card).join(''):'<div class="empty">لا توجد خدمات منشورة في هذا التصنيف بعد.</div>'}</div></div>`}
-function showDetail(id){
- const s=services.find(x=>String(x.id)===String(id));
- if(!s){toast('لم يتم العثور على الخدمة');return}
- const phone=s.phone||'';const wa=s.whatsapp||s.wa||phone;const fb=s.facebook||s.fb||'';
- content.innerHTML=`<div class="page-card detail">
-  <button class="see-all" onclick="home()"><span class="chev">‹</span> رجوع</button>
-  <img class="detail-img" style="margin-top:16px" src="${esc(s.img||s.image_url||fallback[0].img)}" alt="${esc(s.name||s.specialty)}">
-  <h2 style="margin:18px 0 4px">${esc(s.name||s.specialty||'خدمة')}</h2>
-  <div class="muted">${esc(s.category&&s.category!==s.name?s.category:'')}${s.area?(s.category&&s.category!==s.name?' · ':'')+esc(s.area):''}</div>
-  <div class="rating-row" style="margin:10px 0"><span class="star">★</span><span>${Number(s.rating||0).toFixed(1)}</span></div>
-  ${s.details?`<p>${esc(s.details)}</p>`:''}
-  <div class="actions" style="margin-top:16px">
-   ${phone?`<a class="call" href="tel:${esc(phone)}">📞 اتصال</a>`:''}
-   ${wa?`<a class="wa" href="https://wa.me/213${esc(String(wa).replace(/^0/,''))}" target="_blank">💬 واتساب</a>`:''}
-   ${fb?`<a class="fb" href="${esc(fb)}" target="_blank">🔵 فيسبوك</a>`:''}
-  </div>
-  <h3 style="margin-top:26px">قيّم هذه الخدمة</h3>
-  <div id="rateStars" class="stars">${[1,2,3,4,5].map(n=>`<span onclick="rateService('${esc(s.id)}',${n})">☆</span>`).join('')}</div>
- </div>`;
- window.scrollTo({top:0,behavior:'smooth'});
-}
-async function rateService(id,n){
- document.querySelectorAll('#rateStars span').forEach((e,i)=>e.textContent=i<n?'★':'☆');
- if(!client){toast('تم تسجيل تقييمك (تجريبي، اربط Supabase لحفظه)');return}
- let fp;
- try{fp=localStorage.getItem('dabberli_fp');if(!fp){fp=crypto.randomUUID();localStorage.setItem('dabberli_fp',fp)}}catch(e){fp='anon-'+Math.random().toString(36).slice(2)}
- const {error}=await client.from('ratings').insert({service_id:id,rating:n,fingerprint:fp});
- toast(error?'لا يمكن حفظ هذا التقييم (رُبما قيّمت هذه الخدمة من قبل)':'شكرًا على تقييمك');
-}
+function showDetail(id){const s=services.find(x=>String(x.id)===String(id));if(!s)return;const phone=s.phone||'',wa=s.whatsapp||phone,fb=s.facebook||'';content.innerHTML=`<div class="page-card detail"><button class="see-all" onclick="home()">‹ رجوع</button><img class="detail-img" style="margin-top:16px" src="${esc(s.image_url||s.img||fallback[0].img)}"><h2>${esc(s.name||s.specialty)}</h2><div class="muted">${esc(s.category||'')} ${s.area?' · '+esc(s.area):''}</div><div class="rating-row"><span class="star">★</span><span>${Number(s.rating||0).toFixed(1)}</span></div><p>${esc(s.details||'')}</p><div class="actions">${phone?`<a class="call" href="tel:${esc(phone)}">📞 اتصال</a>`:''}${wa?`<a class="wa" href="https://wa.me/213${esc(String(wa).replace(/^0/,''))}" target="_blank">💬 واتساب</a>`:''}${fb?`<a class="fb" href="${esc(fb)}" target="_blank">🔵 فيسبوك</a>`:''}</div></div>`}
 function searchPage(q=''){content.innerHTML=`<div class="page-card"><div class="searchbox"><input id="searchInput" value="${esc(q)}" placeholder="اسم الخدمة أو التخصص أو المنطقة..."><button onclick="doSearch()">بحث</button></div><div id="results"></div></div>`;if(q)doSearch();setActive('search')}
-function doSearch(){const q=(document.getElementById('searchInput')||document.getElementById('heroSearch')).value.trim().toLowerCase();const list=services.filter(s=>`${s.name||''} ${s.category||''} ${s.specialty||''} ${s.area||''}`.toLowerCase().includes(q));const box=document.getElementById('results');if(box)box.innerHTML=`<div class="section-head"><h2>نتائج البحث</h2></div><div class="services">${list.length?list.map(card).join(''):'<div class="empty">لم نجد الخدمة المطلوبة.</div>'}</div>`;window.scrollTo({top:330,behavior:'smooth'})}
-function add(){content.innerHTML=`<div class="page-card form"><div class="section-head"><h2>أضف خدمتك</h2></div><div class="notice">ستظهر الخدمة بعد مراجعتها واعتمادها من الإدارة.</div><form id="addForm"><div class="field"><label>الاسم *</label><input name="name" required></div><div class="field"><label>المجال الرئيسي *</label><select name="category" required>${catData.map(c=>`<option>${c[1]}</option>`).join('')}</select></div><div class="field"><label>التخصص *</label><input name="specialty" required placeholder="مثال: كهربائي منازل"></div><div class="field"><label>لم تجد تخصصك؟ اقترح تخصصًا جديدًا</label><input name="newType" placeholder="اكتب التخصص المقترح للمراجعة"></div><div class="field"><label>رقم الهاتف *</label><input name="phone" required inputmode="tel"></div><div class="field"><label>واتساب</label><input name="whatsapp" inputmode="tel"></div><div class="field"><label>رابط فيسبوك</label><input name="facebook" placeholder="https://facebook.com/..."></div><div class="field"><label>المنطقة</label><input name="area"></div><div class="field"><label>صورة الخدمة</label><input type="file" name="image" accept="image/*"></div><div class="field"><label>التفاصيل</label><textarea name="details"></textarea></div><button class="primary" style="width:100%">إرسال للمراجعة</button></form></div>`;document.getElementById('addForm').onsubmit=submitService;setActive('add')}
-async function submitService(e){
- e.preventDefault();
- if(!client){toast('اربط Supabase أولًا لإرسال الخدمة');return}
- const f=new FormData(e.target);
- const row={name:f.get('name'),category:f.get('category'),specialty:f.get('specialty'),phone:f.get('phone'),whatsapp:f.get('whatsapp'),facebook:f.get('facebook'),area:f.get('area'),details:f.get('details'),status:'pending'};
- const file=f.get('image');
- if(file&&file.size>0){
-  try{
-   const path=`${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name}`;
-   const {error:upErr}=await client.storage.from('service-images').upload(path,file);
-   if(!upErr){const {data:pub}=client.storage.from('service-images').getPublicUrl(path);row.image_url=pub.publicUrl}
-  }catch(err){}
- }
- const {error}=await client.from('services').insert(row);
- const newType=(f.get('newType')||'').trim();
- if(newType){try{await client.from('category_requests').insert({name:newType})}catch(err){}}
- toast(error?'تعذر إرسال الخدمة':'تم إرسال الخدمة للمراجعة');
- if(!error)e.target.reset()
-}
-function news(){content.innerHTML=`<div class="page-card"><div class="section-head"><h2>الأخبار</h2></div><div class="news-item"><b>📢 إعلان</b><p>يمكن لأصحاب الخدمات إضافة خدماتهم وإرسالها للمراجعة.</p></div></div>`;setActive('news')}
-function contact(){content.innerHTML=`<div class="page-card"><div class="section-head"><h2>اتصل بنا</h2></div><p class="muted">للاستفسارات أو تعديل معلومات خدمة منشورة، تواصل مع إدارة دبّرلي.</p><a class="call" style="display:block;text-align:center;padding:13px;border-radius:12px;color:#fff" href="tel:0550000000">اتصال بالإدارة</a></div>`;setActive('contact')}
-function toggleFav(b){b.textContent=b.textContent==='♡'?'♥':'♡';b.style.color=b.textContent==='♥'?'#e83f59':'#5d6468'}
-function setActive(page){document.querySelectorAll('.bottom-nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page))}
-function page(p){drawer.classList.remove('open');overlay.classList.remove('show');({home,search:()=>searchPage(),add,news,contact}[p]||home)();window.scrollTo({top:0,behavior:'smooth'})}
-document.querySelectorAll('.bottom-nav [data-page]').forEach(b=>b.addEventListener('click',()=>page(b.dataset.page)));
-document.querySelectorAll('.drawer [data-page]').forEach(b=>b.addEventListener('click',()=>page(b.dataset.page)));
-document.getElementById('shareBtn').onclick=async()=>{try{if(navigator.share){await navigator.share({title:'دبّرلي',text:'كل ما تحتاجه ... دبّرلي',url:window.location.href});}else{await navigator.clipboard.writeText(window.location.href);toast('تم نسخ رابط التطبيق');}}catch(e){if(e&&e.name!=='AbortError')toast('يمكنك مشاركة رابط التطبيق من جهازك')}};
-document.getElementById('menuBtn').onclick=()=>{drawer.classList.add('open');overlay.classList.add('show')};document.getElementById('closeBtn').onclick=()=>{drawer.classList.remove('open');overlay.classList.remove('show')};overlay.onclick=()=>{drawer.classList.remove('open');overlay.classList.remove('show')};
-document.getElementById('heroSearchBtn').onclick=()=>{const q=document.getElementById('heroSearch').value.trim();searchPage(q);window.scrollTo({top:330,behavior:'smooth'})};document.getElementById('heroSearch').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('heroSearchBtn').click()});
-home();
-</script>
-</body></html>
+function doSearch(){const q=(document.getElementById('searchInput')||document.getElementById('heroSearch')).value.trim().toLowerCase();const list=services.filter(s=>`${s.name||''} ${s.category||''} ${s.specialty||''} ${s.area||''}`.toLowerCase().includes(q));const box=document.getElementById('results');if(box)box.innerHTML=`<div class="section-head"><h2>نتائج البحث</h2></div><div class="services">${list.length?list.map(card).join(''):'<div class="empty">لم نجد الخدمة المطلوبة.</div>'}</div>`}
+function add(){content.innerHTML=`<div class="page-card form"><div class="section-head"><h2>أضف خدمتك</h2></div><div class="notice">ستظهر الخدمة بعد مراجعتها واعتمادها من الإدارة.</div><form id="addForm"><div class="field"><label>الاسم *</label><input name="name" required></div><div class="field"><label>المجال الرئيسي *</label><select name="category" required>${catData.map(c=>`<option>${c[1]}</option>`).join('')}</select></div><div class="field"><label>التخصص *</label><input name="specialty" required></div><div class="field"><label>لم تجد تخصصك؟ اقترح تخصصًا جديدًا</label><input name="newType"></div><div class="field"><label>رقم الهاتف *</label><input name="phone" required inputmode="tel"></div><div class="field"><label>واتساب</label><input name="whatsapp"></div><div class="field"><label>رابط فيسبوك</label><input name="facebook"></div><div class="field"><label>المنطقة</label><input name="area"></div><div class="field"><label>صورة الخدمة</label><input type="file" name="image" accept="image/jpeg,image/png,image/webp"></div><div class="field"><label>التفاصيل</label><textarea name="details"></textarea></div><button class="primary" style="width:100%">إرسال للمراجعة</button></form></div>`;document.getElementById('addForm').onsubmit=submitService;setActive('add')}
+async function submitService(e){e.preventDefault();if(!client){toast('تعذر الاتصال بقاعدة البيانات');return}const f=new FormData(e.target),row={name:f.get('name'),category:f.get('category'),specialty:f.get('specialty'),phone:f.get('phone'),whatsapp:f.get('whatsapp'),facebook:f.get('facebook'),area:f.get('area'),details:f.get('details'),status:'pending'};const file=f.get('image');
+ if(file instanceof File&&file.size>0){if(!['image/jpeg','image/png','image/webp'].includes(file.type)){toast('الصورة يجب أن تكون JPG أو PNG أو WEBP');return}if(file.size>5*1024*1024){toast('حجم الصورة يجب ألا يتجاوز 5 ميغابايت');return}const ext=file.name.split('.').pop().toLowerCase();const path=`services/${crypto.randomUUID()}.${ext}`;const {error:upErr}=await client.storage.from('service-images').upload(path,file,{contentType:file.type,upsert:false});if(upErr){toast('فشل رفع الصورة: '+upErr.message);return}const {data:pub}=client.storage.from('service-images').getPublicUrl(path);row.image_url=pub.publicUrl}
+ const {error}=await client.from('services').insert(row);if(error){toast('تعذر إرسال الخدمة: '+error.message);return}const newType=(f.get('newType')||'').trim();if(newType)await client.from('category_requests').insert({name:newType});toast('تم إرسال الخدمة للمراجعة');e.target.reset()}
+function news(){content.innerHTML='<div class="page-card"><h2>الأخبار</h2><p>يمكن لأصحاب الخدمات إضافة خدماتهم وإرسالها للمراجعة.</p></div>';setActive('news')}function contact(){content.innerHTML='<div class="page-card"><h2>اتصل بنا</h2><p>للاستفسارات أو تعديل معلومات خدمة منشورة، تواصل مع إدارة دبّرلي.</p></div>';setActive('contact')}function about(){content.innerHTML='<div class="page-card"><h2>معلومات عنا</h2><p>دليل خدمات محلي يجمع أصحاب الخدمات والمهن في مكان واحد.</p></div>'}function toggleFav(b){b.textContent=b.textContent==='♡'?'♥':'♡'}function setActive(p){document.querySelectorAll('.bottom-nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p))}function page(p){drawer.classList.remove('open');overlay.classList.remove('show');({home,search:()=>searchPage(),add,news,contact,about}[p]||home)()}document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));document.getElementById('menuBtn').onclick=()=>{drawer.classList.add('open');overlay.classList.add('show')};document.getElementById('closeBtn').onclick=()=>{drawer.classList.remove('open');overlay.classList.remove('show')};overlay.onclick=()=>{drawer.classList.remove('open');overlay.classList.remove('show')};document.getElementById('shareBtn').onclick=async()=>{try{await navigator.share({title:'دبّرلي',text:'كل ما تحتاجه ... دبّرلي',url:location.href})}catch(e){}};document.getElementById('heroSearchBtn').onclick=()=>searchPage(document.getElementById('heroSearch').value.trim());document.getElementById('heroSearch').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('heroSearchBtn').click()});home();
+</script></body></html>
