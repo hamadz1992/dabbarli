@@ -1,0 +1,65 @@
+name: Complete provider form
+on:
+  push:
+    branches: [main]
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch provider form, placeholders and public provider metadata
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p=Path('index.html')
+          s=p.read_text()
+
+          # Cache-bust current JS files.
+          s=s.replace('config.js?v=20260912-33','config.js?v=20260912-35')
+          s=s.replace('category-details.js?v=20260912-33','category-details.js?v=20260912-35')
+          s=s.replace('config.js?v=20260911-29','config.js?v=20260912-35')
+          s=s.replace('category-details.js?v=20260911-29','category-details.js?v=20260912-35')
+
+          # Add a service-specific generated SVG fallback instead of the generic electrician image.
+          marker="function esc(s){"
+          helper="""function servicePlaceholder(s){const name=String(s?.specialty||s?.category||s?.name||'خدمة').trim();const icons={'كهربائي منازل':'⚡','سباك':'🚰','نجار':'🪚','حداد':'🔨','بناء وترميم':'🧱','دهان وطلاء':'🎨','تكييف وتبريد':'❄️','تنظيف منازل':'🧹','سيارات أجرة':'🚕','ميكانيكي':'🔧','تصليح سيارات':'🛠️','كراء سيارات':'🔑','سفريات':'🚌','شاحنات نقل':'🚚','نقل البضائع':'📦','طبيب عام':'🩺','صيدليات':'💊','طبيب بيطري':'🐄','جرارات':'🚜','هواتف':'📱','حواسيب':'💻','برمجة':'👨‍💻','دروس خصوصية':'📚','حلاقة رجالية':'💈','تجميل نسائي':'💄','خدمات توصيل':'📦','شبكات وإنترنت':'📡','إلكترونيات':'📱','أجهزة كهرومنزلية':'🔌','سياحة وإقامة':'🏨'};const icon=icons[name]||'🛠️';const svg='<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#eaf8f0"/><stop offset="1" stop-color="#cfe9dc"/></linearGradient></defs><rect width="1200" height="700" rx="36" fill="url(#g)"/><circle cx="600" cy="245" r="125" fill="#ffffff" opacity=".78"/><text x="600" y="285" text-anchor="middle" font-size="150">${icon}</text><text x="600" y="470" text-anchor="middle" font-family="Arial,sans-serif" font-size="44" font-weight="700" fill="#147a50">${name.replace(/[&<>]/g,'')}</text><text x="600" y="530" text-anchor="middle" font-family="Arial,sans-serif" font-size="26" fill="#557268">صورة تعريفية مولّدة من دبّرلي</text></svg>';return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg)}
+"""
+          if 'function servicePlaceholder(s)' not in s:
+              s=s.replace(marker,helper+marker,1)
+
+          s=s.replace("img:s.image_url||fallback[0].img,rating:Number(s.rating||0)","img:s.image_url||servicePlaceholder(s),rating:Number(s.rating||0)")
+          s=s.replace("img:s.image_url||s.img||fallback[0].img,rating:Number(s.rating||0)","img:s.image_url||s.img||servicePlaceholder(s),rating:Number(s.rating||0)")
+          s=s.replace("src=\"${esc(s.image_url||s.img||fallback[0].img)}\" alt=", "src=\"${esc(s.image_url||s.img||servicePlaceholder(s))}\" alt=")
+          s=s.replace("src=\"${esc(s.image_url||s.img||fallback[0].img)}\"><h2>", "src=\"${esc(s.image_url||s.img||servicePlaceholder(s))}\"><h2>")
+
+          # Provider submission form: exact requested order and wording.
+          old='''<div class="field"><label>الاسم *</label><input name="name" required></div><div class="field"><label>المجال الرئيسي *</label><select name="category" required>${catData.map(c=>`<option>${c[1]}</option>`).join('')}</select></div><div class="field"><label>التخصص *</label><input name="specialty" required></div><div class="field"><label>لم تجد تخصصك؟ اقترح تخصصًا جديدًا</label><input name="newType"></div><div class="field"><label>رقم الهاتف *</label><input name="phone" required inputmode="tel"></div><div class="field"><label>واتساب</label><input name="whatsapp"></div><div class="field"><label>رابط فيسبوك</label><input name="facebook"></div><div class="field"><label>المنطقة</label><input name="area"></div><div class="field"><label>صورة الخدمة</label><input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"></div><div class="field"><label>رابط الصفحة / الموقع</label><input name="link" type="url" placeholder="https://..."></div><div class="field"><label>التفاصيل</label><textarea name="details"></textarea></div>'''
+          new='''<div class="field"><label>الاسم *</label><input name="name" required placeholder="اسم الشركة أو الشخص"></div><div class="field"><label>المجال *</label><select name="category" required>${catData.map(c=>`<option>${c[1]}</option>`).join('')}</select></div><div class="field"><label>التخصص *</label><input name="specialty" required placeholder="مثال: كهربائي، نقل، طبيب..."></div><div class="field"><label>لم تجد تخصصك؟ اقترح تخصصًا جديدًا</label><input name="newType"></div><div class="field"><label>رقم الهاتف *</label><input name="phone" required inputmode="tel" placeholder="0550 00 00 00"></div><div class="field"><label>رقم واتساب إذا وجد</label><input name="whatsapp" inputmode="tel" placeholder="اختياري"></div><div class="field"><label>رابط الفيسبوك</label><input name="facebook" type="url" placeholder="https://facebook.com/..."></div><div class="field"><label>المنطقة</label><input name="area" placeholder="الولاية / البلدية / الحي"></div><div class="field"><label>الصورة للشركة أو الخدمة</label><input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"><small class="muted">إذا لم تضف صورة، سيُنشئ دبّرلي صورة تعريفية مناسبة للخدمة تلقائيًا.</small></div><div class="field"><label>رابط الموقع أو Google Maps</label><input name="link" type="url" placeholder="رابط الموقع أو https://maps.google.com/..."></div><div class="field"><label>تفاصيل إن وجدت</label><textarea name="details" placeholder="وصف الخدمة، أوقات العمل، معلومات إضافية..."></textarea></div>'''
+          if old in s:
+              s=s.replace(old,new,1)
+          else:
+              print('provider form exact block not found')
+
+          p.write_text(s)
+
+          # Public providers: fill verified phone/WhatsApp where known and generate a service-specific image when absent.
+          p=Path('category-details.js')
+          s=p.read_text()
+          needle='\nconst renderGroup='
+          helper="""
+publicServices.forEach(s=>{const phones={'public-yassir':'0782090000','public-yalidine':'0982308080','public-zr':'0230000000','public-numilog':'0770963463','public-airalgerie':'021986363','public-sntf':'021711510','public-aramex':'0982312412','public-mobilis':'0655002999','public-at':'12','public-iris':'036448559','public-naftal':'3305'};if(!s.phone&&phones[s.id])s.phone=phones[s.id];if(!s.whatsapp&&s.phone&&String(s.phone).length>=9)s.whatsapp=s.phone;if(!s.img){const name=String(s.specialty||s.category||s.name||'خدمة');const icons={'خدمات توصيل':'📦','سيارات أجرة':'🚕','نقل البضائع':'🚚','سفريات':'🚌','كراء سيارات':'🔑','شبكات وإنترنت':'📡','إلكترونيات':'📱','أجهزة كهرومنزلية':'🔌','زيوت':'🛢️'};const icon=icons[s.specialty]||'🏢';const svg='<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#eaf8f0"/><stop offset="1" stop-color="#cfe9dc"/></linearGradient></defs><rect width="1200" height="700" rx="36" fill="url(#g)"/><circle cx="600" cy="240" r="120" fill="#fff" opacity=".8"/><text x="600" y="285" text-anchor="middle" font-size="145">'+icon+'</text><text x="600" y="455" text-anchor="middle" font-family="Arial,sans-serif" font-size="42" font-weight="700" fill="#147a50">'+name.replace(/[&<>]/g,'')+'</text><text x="600" y="515" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" fill="#557268">صورة تعريفية مولّدة من دبّرلي</text></svg>';s.img='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg)}});window.__dabbarliPublicServices=publicServices;
+"""
+          if 'window.__dabbarliPublicServices=publicServices' not in s:
+              if needle in s:s=s.replace(needle,'\n'+helper+needle,1)
+              else:s+='\n'+helper
+          p.write_text(s)
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html category-details.js
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Complete provider fields and generated service images"
+          git push
