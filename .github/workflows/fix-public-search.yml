@@ -1,0 +1,41 @@
+name: Fix public directory search
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index search loading
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('config.js?v=20260912-36','config.js?v=20260912-39')
+          s=s.replace('category-details.js?v=20260912-36','category-details.js?v=20260912-39')
+          old="async function loadServices(){if(!client){services=fallback;return}try{const {data,error}=await client.from('services').select('*').eq('status','approved').order('created_at',{ascending:false});const dbServices=error?[]:(data||[]).map(s=>({...s,img:s.image_url||fallback[0].img,rating:Number(s.rating||0)}));const publicDirectory=Array.isArray(window.__dabbarliPublicServices)?window.__dabbarliPublicServices.map(s=>({...s,status:'approved',img:s.image_url||s.img||fallback[0].img,rating:Number(s.rating||0)})):[];const merged=[...dbServices];const ids=new Set(merged.map(s=>String(s.id)));publicDirectory.forEach(s=>{if(!ids.has(String(s.id))){merged.push(s);ids.add(String(s.id))}});services=merged.length?merged:fallback;window.__dabbarliServices=services}catch(e){console.error('loadServices',e);services=fallback;window.__dabbarliServices=services}}"
+          new="async function loadServices(){const publicDirectory=Array.isArray(window.__dabbarliPublicServices)?window.__dabbarliPublicServices.map(s=>({...s,status:'approved',img:s.image_url||s.img||fallback[0].img,rating:Number(s.rating||0)})):[];if(!client){services=publicDirectory.length?publicDirectory:fallback;window.__dabbarliServices=services;return}try{const {data,error}=await client.from('services').select('*').eq('status','approved').order('created_at',{ascending:false});const dbServices=error?[]:(data||[]).map(s=>({...s,img:s.image_url||fallback[0].img,rating:Number(s.rating||0)}));const merged=[...dbServices];const ids=new Set(merged.map(s=>String(s.id)));publicDirectory.forEach(s=>{if(!ids.has(String(s.id))){merged.push(s);ids.add(String(s.id))}});services=merged.length?merged:fallback;window.__dabbarliServices=services}catch(e){console.error('loadServices',e);services=publicDirectory.length?publicDirectory:fallback;window.__dabbarliServices=services}}"
+          if old not in s:
+              raise SystemExit('loadServices pattern not found')
+          s=s.replace(old,new)
+          old2="function searchPage(q=''){content.innerHTML=`<div class=\"page-card\"><div class=\"searchbox\"><input id=\"searchInput\" value=\"${esc(q)}\" placeholder=\"اسم الخدمة أو التخصص أو المنطقة...\"><button onclick=\"doSearch()\">بحث</button></div><div id=\"results\"></div></div>`;if(q)doSearch();setActive('search')}"
+          new2="async function searchPage(q=''){await loadServices();content.innerHTML=`<div class=\"page-card\"><div class=\"searchbox\"><input id=\"searchInput\" value=\"${esc(q)}\" placeholder=\"اسم الخدمة أو التخصص أو المنطقة...\"><button onclick=\"doSearch()\">بحث</button></div><div id=\"results\"></div></div>`;if(q)doSearch();setActive('search')}"
+          if old2 not in s:
+              raise SystemExit('searchPage pattern not found')
+          s=s.replace(old2,new2)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Fix public directory search loading"
+          git push
