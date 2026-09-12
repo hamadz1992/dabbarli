@@ -1,0 +1,56 @@
+name: Enhance public providers
+on:
+  push:
+    branches: [main]
+jobs:
+  enhance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch provider data and detail actions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          cat = Path('category-details.js')
+          s = cat.read_text()
+          marker = 'window.__dabbarliPublicServices=publicServices;'
+          inject = r'''// Enrich public directory entries with official-site logos and verified contact data where available.
+          const publicProviderPhones={
+            'Yalidine':'+213982308080','Numilog':'0770963463','Air Algérie':'021986363','Tassili Airlines':'023824353','SNTF':'021711510','Aramex Algérie':'0982312412','Mobilis':'0655002999','Algérie Télécom':'12','IRIS Algérie':'036448559','Naftal':'3305','FANCYELLOW TRAVEL SERVICES':'+213542840682','Azimut CAR':'+213550240855','Aymen Car Services':'+213770562242','Aerocar':'+213560155491','Algiers Car Rentals ACR':'+213793544065','RAPIDE CAR LOCATION':'+213555014343','Algeria Tours16':'+213773620805','slim services & consulting':'+213770148748','Regus - Algiers Les Pins Maritimes':'+21321985000','Algiers Tours Travels KOLEA':'+213550931741','Oryzabox':'+213559906947','Yassir':'+213782090000'
+          };
+          publicServices.forEach(s=>{
+            if(!s.phone && publicProviderPhones[s.name]) s.phone=publicProviderPhones[s.name];
+            if(!s.img && s.link){try{s.img='https://www.google.com/s2/favicons?domain='+new URL(s.link).hostname+'&sz=256'}catch(e){}}
+          });
+          '''
+          if marker in s and 'publicProviderPhones' not in s:
+              s=s.replace(marker, inject+'\n'+marker, 1)
+          cat.write_text(s)
+
+          idx=Path('index.html')
+          h=idx.read_text()
+          h=h.replace('config.js?v=20260912-33','config.js?v=20260912-34')
+          h=h.replace('category-details.js?v=20260912-33','category-details.js?v=20260912-34')
+          old="const phone=s.phone||'',wa=s.whatsapp||phone,fb=s.facebook||'';content.innerHTML=`<div class=\"page-card detail\"><button class=\"see-all\" onclick=\"home()\">‹ رجوع</button><img class=\"detail-img\" style=\"margin-top:16px;object-fit:cover;object-position:center\" src=\"${esc(s.image_url||s.img||fallback[0].img)}\"><h2>${esc(s.name||s.specialty)}</h2><div class=\"muted\">${esc(s.category||'')} ${s.area?' · '+esc(s.area):''}</div><div class=\"rating-row\"><span class=\"star\">★</span><span>${Number(s.rating||0).toFixed(1)}</span></div><p>${esc(s.details||'')}</p><div class=\"actions\">${phone?`<a class=\"call\" href=\"tel:${esc(phone)}\">📞 اتصال</a>`:''}${wa?`<a class=\"wa\" href=\"https://wa.me/213${esc(String(wa).replace(/^0/,''))}\" target=\"_blank\">💬 واتساب</a>`:''}${fb?`<a class=\"fb\" href=\"${esc(fb)}\" target=\"_blank\">🔵 فيسبوك</a>`:''}</div></div>`}"
+          new="const phone=s.phone||'',wa=s.whatsapp||phone,fb=s.facebook||'',link=s.link||'';content.innerHTML=`<div class=\"page-card detail\"><button class=\"see-all\" onclick=\"home()\">‹ رجوع</button><img class=\"detail-img\" style=\"margin-top:16px;object-fit:cover;object-position:center\" src=\"${esc(s.image_url||s.img||fallback[0].img)}\"><h2>${esc(s.name||s.specialty)}</h2><div class=\"muted\">${esc(s.category||'')} ${s.area?' · '+esc(s.area):''}</div><div class=\"rating-row\"><span class=\"star\">★</span><span>${Number(s.rating||0).toFixed(1)}</span></div><p>${esc(s.details||'')}</p><div class=\"actions\">${phone?`<a class=\"call\" href=\"tel:${esc(phone)}\">📞 اتصال</a>`:''}${wa?`<a class=\"wa\" href=\"https://wa.me/213${esc(String(wa).replace(/^0/,''))}\" target=\"_blank\">💬 واتساب</a>`:''}${fb?`<a class=\"fb\" href=\"${esc(fb)}\" target=\"_blank\">🔵 فيسبوك</a>`:''}${link?`<a class=\"link\" href=\"${esc(link)}\" target=\"_blank\" rel=\"noopener\">🔗 رابط</a>`:''}</div></div>`}"
+          if old not in h:
+              raise SystemExit('showDetail pattern not found')
+          h=h.replace(old,new,1)
+          idx.write_text(h)
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add category-details.js index.html
+          git commit -m 'Add provider images links and contacts' || exit 0
+          git push
+      - name: Remove temporary workflow
+        if: always()
+        run: |
+          rm -f .github/workflows/enhance-public-providers.yml
+          git add .github/workflows/enhance-public-providers.yml
+          git commit -m 'Remove temporary enhancement workflow' || true
+          git push || true
