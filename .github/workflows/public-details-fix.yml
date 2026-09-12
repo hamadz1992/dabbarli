@@ -1,0 +1,77 @@
+name: Fix public provider details
+on:
+  push:
+    branches: [main]
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch public providers and detail actions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('category-details.js')
+          s=p.read_text()
+          marker="const publicServices=["
+          inject="""const publicServices=["""
+          if marker not in s:
+              raise SystemExit('publicServices not found')
+          # Add reliable visual identity from each provider's own domain when no image is supplied.
+          # Google favicon service is used only as a logo fallback; it avoids inventing provider photos.
+          needle="\nconst renderGroup="
+          helper="""
+publicServices.forEach(s=>{if(!s.img&&s.link){try{const host=new URL(s.link).hostname;s.img='https://www.google.com/s2/favicons?domain='+encodeURIComponent(host)+'&sz=256'}catch(e){}}});
+window.__dabbarliPublicServices=publicServices;
+"""
+          if 'window.__dabbarliPublicServices=publicServices' not in s:
+              if needle in s:
+                  s=s.replace(needle,'\n'+helper+needle,1)
+              else:
+                  s += '\n'+helper
+          p.write_text(s)
+
+          p=Path('index.html')
+          s=p.read_text()
+          old="<script src=\"config.js?v=20260912-33\"></script><script src=\"category-details.js?v=20260912-33\"></script>"
+          new="<script src=\"config.js?v=20260912-34\"></script><script src=\"category-details.js?v=20260912-34\"></script>"
+          if old in s:
+              s=s.replace(old,new,1)
+          elif 'category-details.js?' in s:
+              import re
+              s=re.sub(r'config\\.js\\?v=[^\"\\']+', 'config.js?v=20260912-34', s, count=1)
+              s=re.sub(r'category-details\\.js\\?v=[^\"\\']+', 'category-details.js?v=20260912-34', s, count=1)
+
+          old_card='''<img class="service-img" style="object-fit:cover;object-position:center" src="${esc(s.image_url||s.img||fallback[0].img)}" alt="${esc(s.name||s.specialty)}">'''
+          new_card='''<img class="service-img" style="object-fit:${s.source==='public-directory'?'contain':'cover'};object-position:center;background:#fff" src="${esc(s.image_url||s.img||fallback[0].img)}" alt="${esc(s.name||s.specialty)}">'''
+          if old_card in s:
+              s=s.replace(old_card,new_card,1)
+
+          old_detail='''<img class="detail-img" style="margin-top:16px;object-fit:cover;object-position:center" src="${esc(s.image_url||s.img||fallback[0].img)}">'''
+          new_detail='''<img class="detail-img" style="margin-top:16px;object-fit:${s.source==='public-directory'?'contain':'cover'};object-position:center;background:#fff" src="${esc(s.image_url||s.img||fallback[0].img)}">'''
+          if old_detail in s:
+              s=s.replace(old_detail,new_detail,1)
+
+          old_actions='''<div class="actions">${phone?`<a class="call" href="tel:${esc(phone)}">📞 اتصال</a>`:''}${wa?`<a class="wa" href="https://wa.me/213${esc(String(wa).replace(/^0/,''))}" target="_blank">💬 واتساب</a>`:''}${fb?`<a class="fb" href="${esc(fb)}" target="_blank">🔵 فيسبوك</a>`:''}</div>'''
+          new_actions='''<div class="actions">${phone?`<a class="call" href="tel:${esc(phone)}">📞 اتصال</a>`:''}${wa?`<a class="wa" href="https://wa.me/213${esc(String(wa).replace(/^0/,''))}" target="_blank">💬 واتساب</a>`:''}${fb?`<a class="fb" href="${esc(fb)}" target="_blank">🔵 فيسبوك</a>`:''}${s.link?`<a class="link-btn" href="${esc(s.link)}" target="_blank" rel="noopener">🔗 رابط</a>`:''}</div>'''
+          if old_actions in s:
+              s=s.replace(old_actions,new_actions,1)
+          p.write_text(s)
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add category-details.js index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix public provider images and links"
+          git push
+      - name: Remove temporary workflow
+        if: always()
+        run: |
+          rm -f .github/workflows/public-details-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/public-details-fix.yml
+          git diff --cached --quiet || git commit -m "Remove temporary fix workflow"
+          git push || true
